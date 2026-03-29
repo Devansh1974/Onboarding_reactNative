@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SPACING } from '../constants/theme';
 
 interface DatePickerProps {
@@ -25,23 +25,26 @@ export const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, label }
   }, [value]);
 
   const handleDayChange = (val: string) => {
-    setDay(val);
-    if (val && month && year) {
-      onChange(`${year}-${month.padStart(2, '0')}-${val.padStart(2, '0')}`);
+    const cleanVal = val.replace(/[^0-9]/g, '').slice(0, 2);
+    setDay(cleanVal);
+    if (cleanVal && month && year && cleanVal.length === 2) {
+      onChange(`${year}-${month.padStart(2, '0')}-${cleanVal.padStart(2, '0')}`);
     }
   };
 
   const handleMonthChange = (val: string) => {
-    setMonth(val);
-    if (day && val && year) {
-      onChange(`${year}-${val.padStart(2, '0')}-${day.padStart(2, '0')}`);
+    const cleanVal = val.replace(/[^0-9]/g, '').slice(0, 2);
+    setMonth(cleanVal);
+    if (day && cleanVal && year && cleanVal.length === 2) {
+      onChange(`${year}-${cleanVal.padStart(2, '0')}-${day.padStart(2, '0')}`);
     }
   };
 
   const handleYearChange = (val: string) => {
-    setYear(val);
-    if (day && month && val) {
-      onChange(`${val}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+    const cleanVal = val.replace(/[^0-9]/g, '').slice(0, 4);
+    setYear(cleanVal);
+    if (day && month && cleanVal && cleanVal.length === 4) {
+      onChange(`${cleanVal}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
     }
   };
 
@@ -51,21 +54,39 @@ export const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, label }
       <View style={styles.inputRow}>
         <View style={styles.inputWrapper}>
           <Text style={styles.placeholder}>DD</Text>
-          <TouchableOpacity style={styles.input}>
-            <Text style={styles.inputText}>{day || 'DD'}</Text>
-          </TouchableOpacity>
+          <TextInput
+            style={styles.input}
+            value={day}
+            onChangeText={handleDayChange}
+            keyboardType="number-pad"
+            maxLength={2}
+            placeholder="DD"
+            placeholderTextColor={COLORS.textSecondary}
+          />
         </View>
         <View style={styles.inputWrapper}>
           <Text style={styles.placeholder}>MM</Text>
-          <TouchableOpacity style={styles.input}>
-            <Text style={styles.inputText}>{month || 'MM'}</Text>
-          </TouchableOpacity>
+          <TextInput
+            style={styles.input}
+            value={month}
+            onChangeText={handleMonthChange}
+            keyboardType="number-pad"
+            maxLength={2}
+            placeholder="MM"
+            placeholderTextColor={COLORS.textSecondary}
+          />
         </View>
         <View style={styles.inputWrapper}>
           <Text style={styles.placeholder}>YYYY</Text>
-          <TouchableOpacity style={styles.input}>
-            <Text style={styles.inputText}>{year || 'YYYY'}</Text>
-          </TouchableOpacity>
+          <TextInput
+            style={styles.input}
+            value={year}
+            onChangeText={handleYearChange}
+            keyboardType="number-pad"
+            maxLength={4}
+            placeholder="YYYY"
+            placeholderTextColor={COLORS.textSecondary}
+          />
         </View>
       </View>
     </View>
@@ -100,11 +121,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inputText: {
+    textAlign: 'center',
     ...TYPOGRAPHY.body,
     color: COLORS.text,
+    paddingHorizontal: SPACING.sm,
   },
 });

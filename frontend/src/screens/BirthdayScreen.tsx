@@ -17,6 +17,9 @@ export default function BirthdayScreen() {
     router.push('/height');
   };
 
+  // Check if date is complete (format: YYYY-MM-DD)
+  const isDateComplete = birthday.length >= 8 && birthday.includes('-');
+
   return (
     <OnboardingLayout onBack={() => router.back()}>
       <View style={styles.container}>
@@ -32,7 +35,11 @@ export default function BirthdayScreen() {
           </View>
         </View>
 
-        <CustomButton title="Continue" onPress={handleContinue} disabled={!birthday} />
+        <CustomButton 
+          title="Continue" 
+          onPress={handleContinue} 
+          disabled={!isDateComplete} 
+        />
       </View>
     </OnboardingLayout>
   );
