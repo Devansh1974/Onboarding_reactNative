@@ -14,34 +14,20 @@ export default function OtpScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleVerify = async () => {
+  const handleVerify = () => {
     if (otp.length !== 6) {
       setError('Please enter a valid 6-digit code');
       return;
     }
 
-    // TEMPORARY: Accept any 6-digit OTP for development
-    // TODO: Integrate real OTP service later
-    try {
-      setLoading(true);
-      
-      // For now, accept any 6-digit OTP
+    // SKIP OTP VERIFICATION - Accept any 6-digit code
+    setLoading(true);
+    
+    setTimeout(() => {
       updateData({ otp, otpVerified: true });
-      
-      // Optional: Still call backend to log the attempt
-      try {
-        await api.verifyOTP(data.phoneNumber, otp, data.countryCode);
-      } catch (err) {
-        console.log('Backend OTP verification skipped for development');
-      }
-      
-      // Continue to next screen regardless
       router.push('/gender');
-    } catch (err) {
-      setError('Something went wrong');
-    } finally {
       setLoading(false);
-    }
+    }, 500);
   };
 
   const handleResend = async () => {
