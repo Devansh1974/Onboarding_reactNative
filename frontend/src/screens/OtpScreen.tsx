@@ -56,7 +56,7 @@ export default function OtpScreen() {
         <View style={styles.content}>
           <Text style={styles.title}>Verification Code</Text>
           <Text style={styles.subtitle}>
-            Please enter the code sent to{' \n'}
+            Please enter the code sent to{'\n'}
             {data.countryCode} {data.phoneNumber}
           </Text>
 
@@ -85,7 +85,7 @@ export default function OtpScreen() {
 
         <View style={styles.footer}>
           <CustomButton
-            title=\"Verify\"
+            title="Verify"
             onPress={handleVerify}
             disabled={otp.length !== 6}
             loading={loading}
