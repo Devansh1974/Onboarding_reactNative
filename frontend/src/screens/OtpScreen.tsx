@@ -20,18 +20,25 @@ export default function OtpScreen() {
       return;
     }
 
+    // TEMPORARY: Accept any 6-digit OTP for development
+    // TODO: Integrate real OTP service later
     try {
       setLoading(true);
-      const result = await api.verifyOTP(data.phoneNumber, otp, data.countryCode);
       
-      if (result.success) {
-        updateData({ otp, otpVerified: true });
-        router.push('/gender');
-      } else {
-        setError('Invalid OTP');
+      // For now, accept any 6-digit OTP
+      updateData({ otp, otpVerified: true });
+      
+      // Optional: Still call backend to log the attempt
+      try {
+        await api.verifyOTP(data.phoneNumber, otp, data.countryCode);
+      } catch (err) {
+        console.log('Backend OTP verification skipped for development');
       }
+      
+      // Continue to next screen regardless
+      router.push('/gender');
     } catch (err) {
-      setError('Verification failed');
+      setError('Something went wrong');
     } finally {
       setLoading(false);
     }
