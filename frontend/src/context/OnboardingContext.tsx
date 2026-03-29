@@ -1,13 +1,61 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+interface WorkDetails {
+  company?: string;
+  position?: string;
+  jobTitle?: string;
+}
+
+interface StudyDetails {
+  school?: string;
+  course?: string;
+  degree?: string;
+}
+
+interface LifestyleAnswers {
+  drink?: string;
+  smoke?: string;
+  exercise?: string;
+}
+
 interface OnboardingData {
+  // Auth
   phoneNumber: string;
   countryCode: string;
   otp: string;
+  otpVerified: boolean;
+  
+  // Basic Info
   gender: 'male' | 'female' | '';
-  preference: 'male' | 'female' | '';
   name: string;
+  birthday: string;
+  height: number | null;
+  
+  // Location
+  location: string; // "Bangalore" or "Hyderabad"
+  nativeState: string;
+  
+  // Story & Personality
+  story: string;
+  nonNegotiables: string[];
+  offerings: string[];
+  
+  // Work/Education
+  timeUsage: string; // "Working", "Studying", "Figuring It Out"
+  workDetails: WorkDetails;
+  studyDetails: StudyDetails;
+  education: string; // "High School", "Undergraduate", "Doctorate", "Postgraduate"
+  
+  // Beliefs & Lifestyle
+  religionImportance: string;
+  religionFollow: string;
+  foodHabits: string[];
+  interests: string[];
+  lifestyle: LifestyleAnswers;
+  
+  // System
   onboardingCompleted: boolean;
+  notificationsEnabled: boolean;
 }
 
 interface OnboardingContextType {
@@ -20,10 +68,27 @@ const initialData: OnboardingData = {
   phoneNumber: '',
   countryCode: '+91',
   otp: '',
+  otpVerified: false,
   gender: '',
-  preference: '',
   name: '',
+  birthday: '',
+  height: null,
+  location: '',
+  nativeState: '',
+  story: '',
+  nonNegotiables: [],
+  offerings: [],
+  timeUsage: '',
+  workDetails: {},
+  studyDetails: {},
+  education: '',
+  religionImportance: '',
+  religionFollow: '',
+  foodHabits: [],
+  interests: [],
+  lifestyle: {},
   onboardingCompleted: false,
+  notificationsEnabled: false,
 };
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);

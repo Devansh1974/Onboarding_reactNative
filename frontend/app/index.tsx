@@ -1,6 +1,6 @@
 import React from 'react';
-import SplashScreen from '../src/screens/SplashScreen';
+import WelcomePhoneScreen from '../src/screens/WelcomePhoneScreen';
 
 export default function Index() {
-  return <SplashScreen />;
+  return <WelcomePhoneScreen />;
 }

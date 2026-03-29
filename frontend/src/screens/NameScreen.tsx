@@ -19,7 +19,7 @@ export default function NameScreen() {
     }
 
     updateData({ name: name.trim() });
-    router.push('/intro1');
+    router.push('/wingmann-intro');
   };
 
   const handleBack = () => {

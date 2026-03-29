@@ -15,7 +15,7 @@ export default function GenderScreen() {
     if (!selectedGender) return;
     
     updateData({ gender: selectedGender });
-    router.push('/preference');
+    router.push('/name');
   };
 
   const handleBack = () => {

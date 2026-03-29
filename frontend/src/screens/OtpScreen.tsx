@@ -5,27 +5,45 @@ import { OnboardingLayout } from '../components/OnboardingLayout';
 import { CustomButton } from '../components/CustomButton';
 import { OtpInput } from '../components/OtpInput';
 import { useOnboarding } from '../context/OnboardingContext';
+import { api } from '../utils/api';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 export default function OtpScreen() {
   const { data, updateData } = useOnboarding();
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (otp.length !== 6) {
       setError('Please enter a valid 6-digit code');
       return;
     }
 
-    // In real app, verify OTP with backend
-    updateData({ otp });
-    router.push('/gender');
+    try {
+      setLoading(true);
+      const result = await api.verifyOTP(data.phoneNumber, otp, data.countryCode);
+      
+      if (result.success) {
+        updateData({ otp, otpVerified: true });
+        router.push('/gender');
+      } else {
+        setError('Invalid OTP');
+      }
+    } catch (err) {
+      setError('Verification failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResend = () => {
-    // In real app, resend OTP
-    console.log('Resend OTP to:', data.phoneNumber);
+  const handleResend = async () => {
+    try {
+      await api.sendOTP(data.phoneNumber, data.countryCode);
+      console.log('OTP resent to:', data.phoneNumber);
+    } catch (err) {
+      console.error('Failed to resend OTP');
+    }
   };
 
   const handleBack = () => {
@@ -67,9 +85,10 @@ export default function OtpScreen() {
 
         <View style={styles.footer}>
           <CustomButton
-            title="Verify"
+            title=\"Verify\"
             onPress={handleVerify}
             disabled={otp.length !== 6}
+            loading={loading}
           />
         </View>
       </View>
