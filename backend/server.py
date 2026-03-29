@@ -11,6 +11,12 @@ import uuid
 from datetime import datetime, timedelta
 import random
 
+# Configure logging FIRST
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -311,12 +317,8 @@ async def get_all_users():
     Get all users (for admin/testing purposes)
     """
     try:
-        users = await db.users.find().to_list(1000)
-        
-        # Remove sensitive data
-        for user in users:
-            user.pop("otp", None)
-            user.pop("_id", None)
+        # Optimized query with projection to exclude sensitive fields
+        users = await db.users.find({}, {"otp": 0, "_id": 0}).to_list(1000)
         
         return {
             "success": True,
@@ -339,13 +341,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
