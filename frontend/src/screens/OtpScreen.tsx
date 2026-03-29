@@ -1,0 +1,123 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
+import { OnboardingLayout } from '../components/OnboardingLayout';
+import { CustomButton } from '../components/CustomButton';
+import { OtpInput } from '../components/OtpInput';
+import { useOnboarding } from '../context/OnboardingContext';
+import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
+
+export default function OtpScreen() {
+  const { data, updateData } = useOnboarding();
+  const [otp, setOtp] = useState('');
+  const [error, setError] = useState('');
+
+  const handleVerify = () => {
+    if (otp.length !== 6) {
+      setError('Please enter a valid 6-digit code');
+      return;
+    }
+
+    // In real app, verify OTP with backend
+    updateData({ otp });
+    router.push('/gender');
+  };
+
+  const handleResend = () => {
+    // In real app, resend OTP
+    console.log('Resend OTP to:', data.phoneNumber);
+  };
+
+  const handleBack = () => {
+    router.back();
+  };
+
+  return (
+    <OnboardingLayout onBack={handleBack}>
+      <View style={styles.container}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Verification Code</Text>
+          <Text style={styles.subtitle}>
+            Please enter the code sent to{' \n'}
+            {data.countryCode} {data.phoneNumber}
+          </Text>
+
+          <View style={styles.otpContainer}>
+            <OtpInput
+              value={otp}
+              onChange={(value) => {
+                setOtp(value);
+                setError('');
+              }}
+              onComplete={(value) => {
+                console.log('OTP Complete:', value);
+              }}
+            />
+          </View>
+
+          {error && <Text style={styles.error}>{error}</Text>}
+
+          <TouchableOpacity onPress={handleResend} style={styles.resendContainer}>
+            <Text style={styles.resendText}>
+              Didn't receive the code?{' '}
+              <Text style={styles.resendLink}>Resend</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <CustomButton
+            title="Verify"
+            onPress={handleVerify}
+            disabled={otp.length !== 6}
+          />
+        </View>
+      </View>
+    </OnboardingLayout>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  content: {
+    flex: 1,
+    paddingTop: SPACING.xl,
+  },
+  title: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  subtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xl,
+  },
+  otpContainer: {
+    marginVertical: SPACING.xl,
+  },
+  error: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.error,
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+  },
+  resendContainer: {
+    marginTop: SPACING.lg,
+    alignItems: 'center',
+  },
+  resendText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+  },
+  resendLink: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  footer: {
+    paddingBottom: SPACING.lg,
+  },
+});

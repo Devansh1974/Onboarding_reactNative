@@ -1,0 +1,31 @@
+import React from 'react';
+import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { OnboardingProvider } from '../src/context/OnboardingContext';
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <OnboardingProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+            animationDuration: 300,
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="welcome" />
+          <Stack.Screen name="phone" />
+          <Stack.Screen name="otp" />
+          <Stack.Screen name="gender" />
+          <Stack.Screen name="preference" />
+          <Stack.Screen name="name" />
+          <Stack.Screen name="intro1" />
+          <Stack.Screen name="intro2" />
+          <Stack.Screen name="home" />
+        </Stack>
+      </OnboardingProvider>
+    </GestureHandlerRootView>
+  );
+}
