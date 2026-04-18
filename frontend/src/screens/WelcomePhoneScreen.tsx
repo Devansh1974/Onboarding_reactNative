@@ -38,7 +38,7 @@ export default function WelcomePhoneScreen() {
   };
 
   return (
-    <OnboardingLayout showHeader={false} backgroundColor={COLORS.white} scrollable={false}>
+    <OnboardingLayout showHeader={false} backgroundColor={COLORS.white} scrollable={true}>
       <View style={styles.container}>
         <View style={styles.content}>
           <View style={styles.illustrationContainer}>

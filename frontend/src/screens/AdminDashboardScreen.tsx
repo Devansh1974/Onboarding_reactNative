@@ -13,7 +13,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useRootNavigationState, Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAdmin } from '../context/AdminContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../constants/theme';
@@ -50,6 +50,7 @@ type Tab = 'all' | 'scheduled' | 'completed' | 'approved';
 
 export default function AdminDashboardScreen() {
   const { admin, logout } = useAdmin();
+  const rootNavigationState = useRootNavigationState();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [tab, setTab] = useState<Tab>('all');
@@ -61,12 +62,14 @@ export default function AdminDashboardScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!admin) {
-      router.replace('/admin/login');
-      return;
+    if (admin) {
+      loadData();
     }
-    loadData();
   }, [admin]);
+
+  if (!admin) {
+    return <Redirect href="/admin/login" />;
+  }
 
   const loadData = useCallback(async () => {
     try {

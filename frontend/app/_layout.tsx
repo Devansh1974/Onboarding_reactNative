@@ -21,6 +21,7 @@ export default function RootLayout() {
             <Stack.Screen name="gender" />
             <Stack.Screen name="name" />
             <Stack.Screen name="home" />
+            <Stack.Screen name="compatibility-quiz" />
             <Stack.Screen name="admin" />
           </Stack>
         </AdminProvider>

@@ -25,6 +25,7 @@ export default function HomeScreen() {
   const [sessionStatus, setSessionStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -37,11 +38,19 @@ export default function HomeScreen() {
 
   const fetchSessionStatus = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/sessions/user/${data.phoneNumber}`);
-      const result = await response.json();
-      setSessionStatus(result);
+      // Fetch session
+      const sessionResponse = await fetch(`${BACKEND_URL}/api/sessions/user/${data.phoneNumber}`);
+      const sessionResult = await sessionResponse.json();
+      setSessionStatus(sessionResult);
+
+      // Fetch latest user profile to know quiz status
+      const userResponse = await fetch(`${BACKEND_URL}/api/users/${data.phoneNumber}`);
+      const userResult = await userResponse.json();
+      if (userResult.success && userResult.user) {
+        setUserProfile(userResult.user);
+      }
     } catch (error) {
-      console.error('Error fetching session:', error);
+      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -81,6 +90,71 @@ export default function HomeScreen() {
   const reviewStatus = session?.reviewStatus;
   const isApproved = reviewStatus === 'approved';
   const isUnderReview = status === 'completed' && reviewStatus === 'under_review';
+
+  // Derived state for quizzes
+  const quiz = userProfile?.compatibilityQuiz || {};
+  const isQuizCompleted = !!(
+    quiz.lifestyleAndValues?.q5 &&
+    quiz.emotionalCommunication?.q5 &&
+    quiz.attachmentAndComfort?.q5 &&
+    quiz.conflictAndRepair?.q4 &&
+    quiz.growthAndReadiness?.q5
+  );
+
+  const curateVibeCompleted = !!userProfile?.vibeCompleted;
+
+  const matchesUnlocked = isApproved && isQuizCompleted && curateVibeCompleted;
+
+  // === Matches Ready Dashboard ===
+  const renderMatchesReadyDashboard = () => (
+    <View>
+      <Text style={styles.greeting}>
+        {greeting}, {data.name || 'there'}
+      </Text>
+      <Text style={styles.welcome}>Your matches are ready 🎉</Text>
+
+      <View style={styles.successBanner}>
+        <Ionicons name="checkmark-circle-outline" size={24} color="#166534" />
+        <Text style={styles.successBannerText}>
+          Your vibe is set! We've found your first 5 matches.
+        </Text>
+      </View>
+
+      <Text style={styles.sectionLabelDashboard}>YOUR DASHBOARD</Text>
+      <View style={styles.dashboardGrid}>
+         <View style={styles.dashboardMiniCard}>
+            <Text style={styles.dashboardLabel}>Profile</Text>
+            <Text style={styles.dashboardVal}>100%</Text>
+            <View style={styles.dashboardLineWrap}><View style={[styles.dashboardLineCore, { width: '100%' }]} /></View>
+         </View>
+         <View style={styles.dashboardMiniCard}>
+            <Text style={styles.dashboardLabel}>Quiz</Text>
+            <Text style={styles.dashboardVal}>100%</Text>
+            <View style={styles.dashboardLineWrap}><View style={[styles.dashboardLineCore, { width: '100%' }]} /></View>
+         </View>
+      </View>
+      <View style={styles.dashboardMiniCardFull}>
+         <Text style={styles.dashboardLabel}>Vibe</Text>
+         <Text style={styles.dashboardVal}>100%</Text>
+         <View style={styles.dashboardLineWrap}><View style={[styles.dashboardLineCore, { width: '100%' }]} /></View>
+      </View>
+
+      <View style={styles.matchesHero}>
+        <View style={styles.readyPill}>
+          <Text style={styles.readyPillText}>✨ READY</Text>
+        </View>
+        <Text style={styles.matchesHeroTitle}>Meet Your{'\n'}Matches</Text>
+        <Text style={styles.matchesHeroSub}>5 profiles curated just for you today</Text>
+
+        <TouchableOpacity 
+           style={styles.heroBtnWhiteMatches} 
+           onPress={() => router.push('/matches' as any)}
+        >
+          <Text style={styles.heroBtnWhiteTextMatches}>See My Matches →</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   // === Main hero card based on state ===
   const renderHeroCard = () => {
@@ -285,11 +359,14 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
         }
       >
-        {/* Greeting */}
-        <Text style={styles.greeting}>
-          {greeting}, {data.name || 'there'}
-        </Text>
-        <Text style={styles.welcome}>Welcome to Wingmann ✨</Text>
+        {matchesUnlocked ? (
+          renderMatchesReadyDashboard()
+        ) : (
+          <>
+            <Text style={styles.greeting}>
+              {greeting}, {data.name || 'there'}
+            </Text>
+            <Text style={styles.welcome}>Welcome to Wingmann ✨</Text>
 
         {/* Hero Card */}
         {renderHeroCard()}
@@ -313,18 +390,32 @@ export default function HomeScreen() {
         {/* Locked feature cards row */}
         <View style={styles.lockedRow}>
           <LockedCard
-            icon="bulb-outline"
+            icon={isQuizCompleted ? "checkmark-circle" : "bulb-outline"}
             title="Compatibility Quiz"
-            unlocked={isApproved}
+            unlocked={isApproved && !isQuizCompleted}
+            subtextOverride={isQuizCompleted ? "Completed" : undefined}
             onPress={() => router.push('/compatibility-quiz' as any)}
           />
           <LockedCard
             icon="color-palette-outline"
             title="Curate Your Vibe"
-            unlocked={isApproved}
-            onPress={() => {}}
+            unlocked={isApproved && !curateVibeCompleted}
+            subtextOverride={curateVibeCompleted ? "Completed" : undefined}
+            onPress={() => router.push('/curate-vibe' as any)}
           />
         </View>
+
+        <View style={{ ...styles.lockedRow, marginTop: SPACING.sm }}>
+          <LockedCard
+            icon="heart-half-outline"
+            title="View Matches"
+            unlocked={matchesUnlocked}
+            subtextOverride={!matchesUnlocked ? "Requires Quiz & Vibe" : undefined}
+            onPress={() => router.push('/matches' as any)}
+          />
+        </View>
+        </>
+        )}
 
         <View style={{ height: SPACING.xxl }} />
       </ScrollView>
@@ -339,11 +430,13 @@ const LockedCard = ({
   icon,
   title,
   unlocked,
+  subtextOverride,
   onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   unlocked: boolean;
+  subtextOverride?: string;
   onPress: () => void;
 }) => (
   <TouchableOpacity
@@ -366,7 +459,9 @@ const LockedCard = ({
       style={{ marginTop: SPACING.md }}
     />
     <Text style={[styles.lockedTitle, !unlocked && { color: COLORS.textSecondary }]}>{title}</Text>
-    <Text style={styles.lockedSub}>{unlocked ? 'Tap to start' : 'Unlocks after Session'}</Text>
+    <Text style={styles.lockedSub}>
+      {subtextOverride || (unlocked ? 'Tap to start' : 'Unlocks after Session')}
+    </Text>
   </TouchableOpacity>
 );
 
@@ -570,5 +665,82 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
     fontSize: 15,
   },
-  lockedSub: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginTop: 4 },
+  lockedSub: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+
+  // Matches Ready Dashboard Styling
+  successBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DCFCE7', // Tailwind green-100
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  successBannerText: {
+    ...TYPOGRAPHY.body,
+    fontSize: 14,
+    color: '#166534', // Tailwind green-800
+    marginLeft: SPACING.sm,
+    fontWeight: '500',
+  },
+  sectionLabelDashboard: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    letterSpacing: 1.5,
+    fontWeight: '700',
+    marginBottom: SPACING.md,
+  },
+  dashboardGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.sm,
+  },
+  dashboardMiniCard: {
+    width: '48%',
+    backgroundColor: '#FAFAFA',
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+  },
+  dashboardMiniCardFull: {
+    width: '100%',
+    backgroundColor: '#FAFAFA',
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  dashboardLabel: { ...TYPOGRAPHY.bodyBold, fontSize: 13, color: COLORS.textSecondary },
+  dashboardVal: { ...TYPOGRAPHY.body, fontSize: 13, color: COLORS.text, marginTop: 4, marginBottom: 8 },
+  dashboardLineWrap: { width: '100%', height: 4, backgroundColor: COLORS.lightGray, borderRadius: 2 },
+  dashboardLineCore: { height: '100%', backgroundColor: COLORS.primaryDark, borderRadius: 2 },
+  
+  matchesHero: {
+    backgroundColor: '#472B52',
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.xl,
+    marginTop: SPACING.md,
+  },
+  readyPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginBottom: SPACING.lg,
+  },
+  readyPillText: { color: COLORS.white, fontSize: 10, fontWeight: '700', letterSpacing: 1 },
+  matchesHeroTitle: { ...TYPOGRAPHY.h1, color: COLORS.white, fontSize: 32, lineHeight: 38 },
+  matchesHeroSub: { ...TYPOGRAPHY.body, color: COLORS.lightGray, marginTop: SPACING.sm, marginBottom: SPACING.xl },
+  heroBtnWhiteMatches: {
+    backgroundColor: COLORS.white,
+    paddingVertical: 14,
+    borderRadius: 30,
+    alignItems: 'center',
+    width: 200,
+  },
+  heroBtnWhiteTextMatches: { ...TYPOGRAPHY.button, color: '#472B52', fontSize: 13 },
 });

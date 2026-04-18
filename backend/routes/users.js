@@ -29,6 +29,8 @@ const userSchema = new mongoose.Schema({
   lifestyle: { drink: String, smoke: String, exercise: String },
   onboardingCompleted: { type: Boolean, default: false },
   notificationsEnabled: { type: Boolean, default: false },
+  vibeCompleted: { type: Boolean, default: false },
+  compatibilityQuiz: { type: Object, default: {} },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -119,6 +121,15 @@ router.patch('/users/profile', async (req, res) => {
     
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    if (data.compatibilityQuiz) {
+      user.compatibilityQuiz = { 
+        ...(user.compatibilityQuiz || {}), 
+        ...data.compatibilityQuiz 
+      };
+      user.markModified('compatibilityQuiz');
+      delete data.compatibilityQuiz;
     }
     
     Object.assign(user, data);
