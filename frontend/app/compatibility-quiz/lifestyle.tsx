@@ -19,13 +19,13 @@ interface Answers {
 
 export default function LifestyleQuiz() {
   const { data } = useOnboarding();
-  const [step, setStep] = useState(1);
-  const [answers, setAnswers] = useState<Answers>({});
-  const [loading, setLoading] = useState(false);
-
   // Submit Final Answers
   const handleSubmit = async () => {
-    if (!answers.q5) return;
+    if (!answers.q1 || !answers.q2 || !answers.q3 || !answers.q4 || !answers.q5) {
+      Alert.alert('Incomplete', 'Please answer all questions before proceeding.');
+      return;
+    }
+    
     setLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
@@ -54,14 +54,8 @@ export default function LifestyleQuiz() {
     }
   };
 
-  const nextStep = () => {
-    if (step < 5) setStep(step + 1);
-    else handleSubmit();
-  };
-
   const prevStep = () => {
-    if (step > 1) setStep(step - 1);
-    else router.back();
+    router.back();
   };
 
   // Generic Button to go to next step
@@ -154,74 +148,63 @@ export default function LifestyleQuiz() {
         style={{ flex: 1 }}
       >
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
-          <View style={styles.pillWrap}>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>QUESTION {step} OF 5</Text>
-            </View>
-          </View>
+          <Text style={styles.formInstruction}>Answer the following questions carefully.</Text>
 
           {/* QUESTION 1 */}
-          {step === 1 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>How do you usually like to spend your weekends?</Text>
-              {renderGridOptions([
-                { id: 'home', text: 'Relaxing at home', icon: 'cafe' },
-                { id: 'explore', text: 'Going out, exploring places.', icon: 'map' },
-                { id: 'productive', text: 'Doing something productive.', icon: 'laptop' },
-                { id: 'mood', text: 'Mixing it up depends on mood.', icon: 'color-palette' },
-              ], answers.q1, 'q1')}
-              {renderNextArrow(!answers.q1)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>1. How do you usually like to spend your weekends?</Text>
+            {renderGridOptions([
+              { id: 'home', text: 'Relaxing at home', icon: 'cafe' },
+              { id: 'explore', text: 'Going out, exploring places.', icon: 'map' },
+              { id: 'productive', text: 'Doing something productive.', icon: 'laptop' },
+              { id: 'mood', text: 'Mixing it up depends on mood.', icon: 'color-palette' },
+            ], answers.q1, 'q1')}
+          </View>
 
           {/* QUESTION 2 */}
-          {step === 2 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>When it comes to managing money as a couple, I prefer:</Text>
-              {renderGridOptions([
-                { id: 'together', text: 'Putting it all together.', icon: 'wallet' },
-                { id: 'open', text: 'Keeping our own accounts but being open about stuff.', icon: 'pie-chart' },
-                { id: 'split', text: 'Splitting things in a way that feels fair for both.', icon: 'git-compare' },
-                { id: 'separate', text: 'Keeping finances totally separate.', icon: 'lock-closed' },
-              ], answers.q2, 'q2')}
-              {renderNextArrow(!answers.q2)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>2. When it comes to managing money as a couple, I prefer:</Text>
+            {renderGridOptions([
+              { id: 'together', text: 'Putting it all together.', icon: 'wallet' },
+              { id: 'open', text: 'Keeping our own accounts but being open about stuff.', icon: 'pie-chart' },
+              { id: 'split', text: 'Splitting things in a way that feels fair for both.', icon: 'git-compare' },
+              { id: 'separate', text: 'Keeping finances totally separate.', icon: 'lock-closed' },
+            ], answers.q2, 'q2')}
+          </View>
 
           {/* QUESTION 3 */}
-          {step === 3 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>I feel most balanced when my partner and I have similar daily habits and energy levels.</Text>
-              {renderScaleOptions(answers.q3, 'q3')}
-              {renderNextArrow(!answers.q3)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>3. I feel most balanced when my partner and I have similar daily habits and energy levels.</Text>
+            {renderScaleOptions(answers.q3, 'q3')}
+          </View>
 
           {/* QUESTION 4 */}
-          {step === 4 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>If I had to choose between spending time on my goals or my relationship, I'd usually choose my goals.</Text>
-              {renderScaleOptions(answers.q4, 'q4')}
-              {renderNextArrow(!answers.q4)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>4. If I had to choose between spending time on my goals or my relationship, I'd usually choose my goals.</Text>
+            {renderScaleOptions(answers.q4, 'q4')}
+          </View>
 
           {/* QUESTION 5 */}
-          {step === 5 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>What's one thing that really matters to you in a relationship?</Text>
-              <TextInput 
-                style={styles.textInput}
-                placeholder="Write your answer"
-                placeholderTextColor={COLORS.textSecondary}
-                multiline
-                maxLength={200}
-                value={answers.q5 || ''}
-                onChangeText={(txt) => setAnswers(prev => ({...prev, q5: txt}))}
-              />
-              {renderNextArrow(!answers.q5)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>5. What's one thing that really matters to you in a relationship?</Text>
+            <TextInput 
+              style={styles.textInput}
+              placeholder="Write your answer"
+              placeholderTextColor={COLORS.textSecondary}
+              multiline
+              maxLength={200}
+              value={answers.q5 || ''}
+              onChangeText={(txt) => setAnswers(prev => ({...prev, q5: txt}))}
+            />
+          </View>
+
+          <TouchableOpacity 
+             style={styles.submitBtn} 
+             onPress={handleSubmit}
+             disabled={loading}
+          >
+             <Text style={styles.submitBtnText}>{loading ? "Saving..." : "Save & Continue"}</Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -367,4 +350,21 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
+  submitBtn: {
+    backgroundColor: '#472B52',
+    paddingVertical: 18,
+    borderRadius: BORDER_RADIUS.xl,
+    alignItems: 'center',
+    marginVertical: SPACING.xl,
+  },
+  submitBtnText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.white,
+    fontSize: 16,
+  },
+  formInstruction: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.md,
+  }
 });

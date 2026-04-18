@@ -22,7 +22,10 @@ export default function GrowthQuiz() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!answers.q5) return;
+    if (!answers.q1 || !answers.q2 || !answers.q3 || !answers.q4 || !answers.q5) {
+      Alert.alert('Incomplete', 'Please answer all questions before proceeding.');
+      return;
+    }
     setLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
@@ -52,14 +55,8 @@ export default function GrowthQuiz() {
     }
   };
 
-  const nextStep = () => {
-    if (step < 5) setStep(step + 1);
-    else handleSubmit();
-  };
-
   const prevStep = () => {
-    if (step > 1) setStep(step - 1);
-    else router.back();
+    router.back();
   };
 
   const renderNextArrow = (disabled = false) => (
@@ -141,67 +138,55 @@ export default function GrowthQuiz() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
-          <View style={styles.pillWrap}>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>QUESTION {step} OF 5</Text>
-            </View>
-          </View>
+          <Text style={styles.formInstruction}>Answer the following questions carefully.</Text>
 
           {/* Q1 */}
-          {step === 1 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>I believe relationships help both people grow.</Text>
-              {renderScaleOptions(answers.q1, 'q1')}
-              {renderNextArrow(!answers.q1)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>1. I believe relationships help both people grow.</Text>
+            {renderScaleOptions(answers.q1, 'q1')}
+          </View>
 
           {/* Q2 */}
-          {step === 2 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>When I realise I've hurt someone, I try to take responsibility and reconnect.</Text>
-              {renderScaleOptions(answers.q2, 'q2')}
-              {renderNextArrow(!answers.q2)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>2. When I realise I've hurt someone, I try to take responsibility and reconnect.</Text>
+            {renderScaleOptions(answers.q2, 'q2')}
+          </View>
 
           {/* Q3 */}
-          {step === 3 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>I rarely talk about my feelings and emotions.</Text>
-              {renderScaleOptions(answers.q3, 'q3')}
-              {renderNextArrow(!answers.q3)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>3. I rarely talk about my feelings and emotions.</Text>
+            {renderScaleOptions(answers.q3, 'q3')}
+          </View>
 
           {/* Q4 */}
-          {step === 4 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>Where are you currently at in your dating journey?</Text>
-              {renderGridOptions([
-                { id: 'meaningful', text: 'Ready to build something meaningful', icon: 'heart-outline' },
-                { id: 'cautious', text: 'Open but cautious', icon: 'shield-checkmark-outline' },
-                { id: 'exploring', text: 'Still exploring what I really want', icon: 'compass-outline' },
-                { id: 'healing', text: 'Healing and taking things slow', icon: 'bed-outline' },
-              ], answers.q4, 'q4')}
-              {renderNextArrow(!answers.q4)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>4. Where are you currently at in your dating journey?</Text>
+            {renderGridOptions([
+              { id: 'meaningful', text: 'Ready to build something meaningful', icon: 'heart-outline' },
+              { id: 'cautious', text: 'Open but cautious', icon: 'shield-checkmark-outline' },
+              { id: 'exploring', text: 'Still exploring what I really want', icon: 'compass-outline' },
+              { id: 'healing', text: 'Healing and taking things slow', icon: 'bed-outline' },
+            ], answers.q4, 'q4')}
+          </View>
 
           {/* Q5 */}
-          {step === 5 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>I've learned the most about relationships from...</Text>
-              {renderGridOptions([
-                { id: 'past', text: 'My past relationships', icon: 'person-outline' },
-                { id: 'family', text: 'Watching family or friends', icon: 'people-outline' },
-                { id: 'growth', text: 'Personal growth and self-reflection', icon: 'leaf-outline' },
-                { id: 'media', text: 'Movies, books, or social media', icon: 'tv-outline' },
-              ], answers.q5, 'q5')}
-              {renderNextArrow(!answers.q5)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>5. I've learned the most about relationships from...</Text>
+            {renderGridOptions([
+              { id: 'past', text: 'My past relationships', icon: 'person-outline' },
+              { id: 'family', text: 'Watching family or friends', icon: 'people-outline' },
+              { id: 'growth', text: 'Personal growth and self-reflection', icon: 'leaf-outline' },
+              { id: 'media', text: 'Movies, books, or social media', icon: 'tv-outline' },
+            ], answers.q5, 'q5')}
+          </View>
 
+          <TouchableOpacity 
+             style={styles.submitBtn} 
+             onPress={handleSubmit}
+             disabled={loading}
+          >
+             <Text style={styles.submitBtnText}>{loading ? "Saving..." : "Save & Complete Quiz"}</Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -231,4 +216,13 @@ const styles = StyleSheet.create({
   scaleTextSelected: { color: COLORS.primary, fontWeight: '600' },
   arrowContainer: { alignItems: 'center', marginTop: SPACING.xxl },
   roundArrowBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primaryDark, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  submitBtn: {
+    backgroundColor: '#472B52',
+    paddingVertical: 18,
+    borderRadius: BORDER_RADIUS.xl,
+    alignItems: 'center',
+    marginVertical: SPACING.xl,
+  },
+  submitBtnText: { ...TYPOGRAPHY.button, color: COLORS.white, fontSize: 16 },
+  formInstruction: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginBottom: SPACING.md }
 });

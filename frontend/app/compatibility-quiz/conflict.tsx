@@ -21,7 +21,10 @@ export default function ConflictQuiz() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!answers.q4) return;
+    if (!answers.q1 || !answers.q2 || !answers.q3 || !answers.q4) {
+      Alert.alert('Incomplete', 'Please answer all questions before proceeding.');
+      return;
+    }
     setLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
@@ -50,14 +53,8 @@ export default function ConflictQuiz() {
     }
   };
 
-  const nextStep = () => {
-    if (step < 4) setStep(step + 1);
-    else handleSubmit();
-  };
-
   const prevStep = () => {
-    if (step > 1) setStep(step - 1);
-    else router.back();
+    router.back();
   };
 
   const renderNextArrow = (disabled = false) => (
@@ -139,53 +136,44 @@ export default function ConflictQuiz() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
-          <View style={styles.pillWrap}>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>QUESTION {step} OF 4</Text>
-            </View>
-          </View>
+          <Text style={styles.formInstruction}>Answer the following questions carefully.</Text>
 
           {/* Q1 */}
-          {step === 1 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>After a disagreement, I'm usually the one to take the first step toward making things right.</Text>
-              {renderScaleOptions(answers.q1, 'q1')}
-              {renderNextArrow(!answers.q1)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>1. After a disagreement, I'm usually the one to take the first step toward making things right.</Text>
+            {renderScaleOptions(answers.q1, 'q1')}
+          </View>
 
           {/* Q2 */}
-          {step === 2 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>When conflict arises, I tend to:</Text>
-              {renderGridOptions([
-                { id: 'avoid', text: 'Avoid it until things calm down', icon: 'walk-outline' },
-                { id: 'address', text: 'Address it right away', icon: 'chatbubbles-outline' },
-                { id: 'compromise', text: 'Compromise quickly to move on', icon: 'handshake-outline' },
-                { id: 'reflect', text: 'Reflect before bringing it up', icon: 'bulb-outline' },
-              ], answers.q2, 'q2')}
-              {renderNextArrow(!answers.q2)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>2. When conflict arises, I tend to:</Text>
+            {renderGridOptions([
+              { id: 'avoid', text: 'Avoid it until things calm down', icon: 'walk-outline' },
+              { id: 'address', text: 'Address it right away', icon: 'chatbubbles-outline' },
+              { id: 'compromise', text: 'Compromise quickly to move on', icon: 'handshake-outline' },
+              { id: 'reflect', text: 'Reflect before bringing it up', icon: 'bulb-outline' },
+            ], answers.q2, 'q2')}
+          </View>
 
           {/* Q3 */}
-          {step === 3 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>I often focus more on being right than on being understood.</Text>
-              {renderScaleOptions(answers.q3, 'q3')}
-              {renderNextArrow(!answers.q3)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>3. I often focus more on being right than on being understood.</Text>
+            {renderScaleOptions(answers.q3, 'q3')}
+          </View>
 
           {/* Q4 */}
-          {step === 4 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>I find it difficult to stay calm when I feel misunderstood.</Text>
-              {renderScaleOptions(answers.q4, 'q4')}
-              {renderNextArrow(!answers.q4)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>4. I find it difficult to stay calm when I feel misunderstood.</Text>
+            {renderScaleOptions(answers.q4, 'q4')}
+          </View>
 
+          <TouchableOpacity 
+             style={styles.submitBtn} 
+             onPress={handleSubmit}
+             disabled={loading}
+          >
+             <Text style={styles.submitBtnText}>{loading ? "Saving..." : "Save & Continue"}</Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -215,4 +203,13 @@ const styles = StyleSheet.create({
   scaleTextSelected: { color: COLORS.primary, fontWeight: '600' },
   arrowContainer: { alignItems: 'center', marginTop: SPACING.xxl },
   roundArrowBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primaryDark, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  submitBtn: {
+    backgroundColor: '#472B52',
+    paddingVertical: 18,
+    borderRadius: BORDER_RADIUS.xl,
+    alignItems: 'center',
+    marginVertical: SPACING.xl,
+  },
+  submitBtnText: { ...TYPOGRAPHY.button, color: COLORS.white, fontSize: 16 },
+  formInstruction: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginBottom: SPACING.md }
 });

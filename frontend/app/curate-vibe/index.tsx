@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   heroFooter: { ...TYPOGRAPHY.caption, textAlign: 'center', color: COLORS.textSecondary, letterSpacing: 0.5, marginTop: SPACING.xxl, marginBottom: SPACING.xl },
   
   // Global Button
-  primaryButton: { flexDirection: 'row', backgroundColor: '#472B52', width: '100%', paddingVertical: 18, borderRadius: 30, alignItems: 'center', justifyContent: 'center', marginTop: 'auto', shadowColor: '#472B52', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  primaryButton: { flexDirection: 'row', backgroundColor: '#472B52', width: '100%', paddingVertical: 18, borderRadius: 30, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl, marginBottom: SPACING.xxl, shadowColor: '#472B52', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
   primaryButtonText: { ...TYPOGRAPHY.button, color: COLORS.white, marginRight: SPACING.sm, fontSize: 16 },
 
   // Grids

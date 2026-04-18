@@ -22,7 +22,10 @@ export default function EmotionalCommunicationQuiz() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!answers.q5) return;
+    if (!answers.q1 || !answers.q2 || !answers.q3 || !answers.q4 || !answers.q5) {
+      Alert.alert('Incomplete', 'Please answer all questions before proceeding.');
+      return;
+    }
     setLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
@@ -32,11 +35,6 @@ export default function EmotionalCommunicationQuiz() {
           phoneNumber: data.phoneNumber,
           data: {
             compatibilityQuiz: {
-              // Using object spreading if older data exists, 
-              // but since our patch is basic we'll just send this under a key
-              // Wait, the backend does Object.assign(user, data).
-              // Since it replaces the top-level key, it's safer to nest it. 
-              // We'll trust the user wants it grouped. For MVP this works.
               emotionalCommunication: answers
             }
           }
@@ -56,14 +54,8 @@ export default function EmotionalCommunicationQuiz() {
     }
   };
 
-  const nextStep = () => {
-    if (step < 5) setStep(step + 1);
-    else handleSubmit();
-  };
-
   const prevStep = () => {
-    if (step > 1) setStep(step - 1);
-    else router.back();
+    router.back();
   };
 
   const renderNextArrow = (disabled = false) => (
@@ -149,67 +141,55 @@ export default function EmotionalCommunicationQuiz() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
-          <View style={styles.pillWrap}>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>QUESTION {step} OF 5</Text>
-            </View>
-          </View>
+          <Text style={styles.formInstruction}>Answer the following questions carefully.</Text>
 
           {/* Q1 */}
-          {step === 1 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>When I'm upset, I tend to:</Text>
-              {renderGridOptions([
-                { id: 'quiet', text: 'Stay quiet and think', icon: 'moon-outline' },
-                { id: 'talk', text: 'Talk things through right away', icon: 'chatbubbles-outline' },
-                { id: 'distract', text: 'Distract myself until I feel calmer', icon: 'game-controller-outline' },
-                { id: 'wait', text: 'Wait for the other person to reach out first', icon: 'time-outline' },
-              ], answers.q1, 'q1')}
-              {renderNextArrow(!answers.q1)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>1. When I'm upset, I tend to:</Text>
+            {renderGridOptions([
+              { id: 'quiet', text: 'Stay quiet and think', icon: 'moon-outline' },
+              { id: 'talk', text: 'Talk things through right away', icon: 'chatbubbles-outline' },
+              { id: 'distract', text: 'Distract myself until I feel calmer', icon: 'game-controller-outline' },
+              { id: 'wait', text: 'Wait for the other person to reach out first', icon: 'time-outline' },
+            ], answers.q1, 'q1')}
+          </View>
 
           {/* Q2 */}
-          {step === 2 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>When you care about someone, you usually show it through...</Text>
-              {renderGridOptions([
-                { id: 'time', text: 'Spending quality time together', icon: 'people-outline' },
-                { id: 'gifts', text: 'Giving thoughtful gifts', icon: 'gift-outline' },
-                { id: 'checking', text: 'Checking in and making sure they are okay', icon: 'heart-outline' },
-                { id: 'support', text: 'Doing things to help or support them', icon: 'construct-outline' },
-              ], answers.q2, 'q2')}
-              {renderNextArrow(!answers.q2)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>2. When you care about someone, you usually show it through...</Text>
+            {renderGridOptions([
+              { id: 'time', text: 'Spending quality time together', icon: 'people-outline' },
+              { id: 'gifts', text: 'Giving thoughtful gifts', icon: 'gift-outline' },
+              { id: 'checking', text: 'Checking in and making sure they are okay', icon: 'heart-outline' },
+              { id: 'support', text: 'Doing things to help or support them', icon: 'construct-outline' },
+            ], answers.q2, 'q2')}
+          </View>
 
           {/* Q3 */}
-          {step === 3 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>I pick up on changes in someone's mood quickly.</Text>
-              {renderScaleOptions(answers.q3, 'q3')}
-              {renderNextArrow(!answers.q3)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>3. I pick up on changes in someone's mood quickly.</Text>
+            {renderScaleOptions(answers.q3, 'q3')}
+          </View>
 
           {/* Q4 */}
-          {step === 4 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>I can express how I feel even when it might cause disagreement.</Text>
-              {renderScaleOptions(answers.q4, 'q4')}
-              {renderNextArrow(!answers.q4)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>4. I can express how I feel even when it might cause disagreement.</Text>
+            {renderScaleOptions(answers.q4, 'q4')}
+          </View>
 
           {/* Q5 */}
-          {step === 5 && (
-            <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>When my partner withdraws during a disagreement, I usually want to reach out and reconnect.</Text>
-              {renderScaleOptions(answers.q5, 'q5')}
-              {renderNextArrow(!answers.q5)}
-            </View>
-          )}
+          <View style={styles.stepBlock}>
+            <Text style={styles.questionTitle}>5. When my partner withdraws during a disagreement, I usually want to reach out and reconnect.</Text>
+            {renderScaleOptions(answers.q5, 'q5')}
+          </View>
 
+          <TouchableOpacity 
+             style={styles.submitBtn} 
+             onPress={handleSubmit}
+             disabled={loading}
+          >
+             <Text style={styles.submitBtnText}>{loading ? "Saving..." : "Save & Continue"}</Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -239,4 +219,21 @@ const styles = StyleSheet.create({
   scaleTextSelected: { color: COLORS.primary, fontWeight: '600' },
   arrowContainer: { alignItems: 'center', marginTop: SPACING.xxl },
   roundArrowBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primaryDark, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  submitBtn: {
+    backgroundColor: '#472B52',
+    paddingVertical: 18,
+    borderRadius: BORDER_RADIUS.xl,
+    alignItems: 'center',
+    marginVertical: SPACING.xl,
+  },
+  submitBtnText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.white,
+    fontSize: 16,
+  },
+  formInstruction: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.md,
+  }
 });
