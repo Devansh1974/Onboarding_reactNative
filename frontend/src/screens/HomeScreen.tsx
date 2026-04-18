@@ -1,8 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Alert, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Linking,
+  Alert,
+  RefreshControl,
+} from 'react-native';
 import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useOnboarding } from '../context/OnboardingContext';
 import { buildGoogleCalendarUrl, buildSessionDate } from '../utils/calendar';
+import BottomTabBar from '../components/BottomTabBar';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../constants/theme';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
@@ -46,10 +58,9 @@ export default function HomeScreen() {
       const start = buildSessionDate(session.scheduledDate, session.scheduledTime);
       const url = buildGoogleCalendarUrl({
         title: 'WingMann · Know Yourself Session',
-        details:
-          session.meetingLink
-            ? `Your 30-minute Know Yourself video session.\n\nJoin: ${session.meetingLink}`
-            : 'Your 30-minute Know Yourself video session. A Google Meet link will be shared soon.',
+        details: session.meetingLink
+          ? `Your 30-minute Know Yourself video session.\n\nJoin: ${session.meetingLink}`
+          : 'Your 30-minute Know Yourself video session. A Google Meet link will be shared soon.',
         startDate: start,
         durationMinutes: session.duration || 30,
       });
@@ -65,312 +76,499 @@ export default function HomeScreen() {
     Linking.openURL(link).catch(() => Alert.alert('Error', 'Could not open meeting link.'));
   };
 
-  const renderContent = () => {
+  const session = sessionStatus?.session;
+  const status = sessionStatus?.status || 'not_scheduled';
+  const reviewStatus = session?.reviewStatus;
+  const isApproved = reviewStatus === 'approved';
+  const isUnderReview = status === 'completed' && reviewStatus === 'under_review';
+
+  // === Main hero card based on state ===
+  const renderHeroCard = () => {
     if (loading) {
-      return <Text style={styles.loadingText}>Loading...</Text>;
-    }
-
-    const session = sessionStatus?.session;
-    const status = sessionStatus?.status || 'not_scheduled';
-
-    // State 1: Not Scheduled
-    if (status === 'not_scheduled' || !session) {
       return (
-        <View style={styles.card}>
-          <Text style={styles.cardIcon}>📅</Text>
-          <Text style={styles.cardTitle}>Schedule Your Know Yourself Session</Text>
-          <Text style={styles.cardText}>
-            A 30-minute video call to understand your dating goals better
-          </Text>
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => router.push('/schedule-intro')}
-          >
-            <Text style={styles.buttonText}>Schedule Now</Text>
-          </TouchableOpacity>
+        <View style={styles.heroCard}>
+          <Text style={styles.loadingText}>Loading…</Text>
         </View>
       );
     }
 
-    // State 2: Scheduled
+    // Scheduled
     if (status === 'scheduled' || status === 'rescheduled') {
       const sessionDate = new Date(session.scheduledDate);
       const daysUntil = Math.ceil((sessionDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-      
       return (
-        <View style={styles.card}>
-          <View style={styles.cardHeaderRow}>
-            <View style={styles.statusPill}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusPillText}>Confirmed</Text>
+        <View style={styles.heroCard}>
+          <View style={styles.heroPillRow}>
+            <View style={styles.confirmedPill}>
+              <View style={styles.confirmedDot} />
+              <Text style={styles.confirmedPillText}>CONFIRMED</Text>
             </View>
+          </View>
+          <Text style={styles.heroTitle}>Your Know Yourself Session</Text>
+          <Text style={styles.heroSub}>
+            {sessionDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}{' '}
+            · {session.scheduledTime} ·{' '}
+            {daysUntil === 0 ? 'Today!' : daysUntil === 1 ? 'Tomorrow' : `in ${daysUntil} days`}
+          </Text>
+
+          <View style={styles.heroActionsRow}>
+            {session.meetingLink ? (
+              <TouchableOpacity
+                style={styles.heroBtnWhite}
+                onPress={() => handleJoinMeet(session.meetingLink)}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="videocam" size={18} color={COLORS.primary} />
+                <Text style={styles.heroBtnWhiteText}>Join Meet</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.heroBtnWhite}
+                onPress={() => handleAddToCalendar(session)}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="calendar" size={18} color={COLORS.primary} />
+                <Text style={styles.heroBtnWhiteText}>Add to Calendar</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
-              style={styles.calendarIconBtn}
-              onPress={() => handleAddToCalendar(session)}
-              accessibilityLabel="Add to Calendar"
-              activeOpacity={0.7}
+              style={styles.heroBtnGhost}
+              onPress={() => router.push('/reschedule-reason')}
+              activeOpacity={0.9}
             >
-              <Text style={styles.calendarIconText}>🗓️</Text>
+              <Text style={styles.heroBtnGhostText}>Reschedule</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.cardIcon}>✅</Text>
-          <Text style={styles.cardTitle}>Session Scheduled</Text>
-          <View style={styles.sessionInfo}>
-            <Text style={styles.sessionDate}>
-              {sessionDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </Text>
-            <Text style={styles.sessionTime}>{session.scheduledTime}</Text>
-            <Text style={styles.countdown}>
-              {daysUntil === 0 ? 'Today!' : daysUntil === 1 ? 'Tomorrow' : `In ${daysUntil} days`}
-            </Text>
-          </View>
-
-          {session.meetingLink ? (
-            <TouchableOpacity style={styles.meetLinkButton} onPress={() => handleJoinMeet(session.meetingLink)}>
-              <Text style={styles.meetLinkText}>📹  Join Google Meet</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.meetPendingBox}>
-              <Text style={styles.meetPendingText}>📨  Google Meet link will appear here before your session</Text>
-            </View>
+          {!session.meetingLink && (
+            <Text style={styles.heroNote}>📨 Google Meet link will appear here before your session</Text>
           )}
-
-          <TouchableOpacity
-            style={styles.addCalBtn}
-            onPress={() => handleAddToCalendar(session)}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.addCalText}>🗓️  Add to Calendar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.secondaryButton}
-            onPress={() => router.push('/reschedule-reason')}
-          >
-            <Text style={styles.secondaryButtonText}>Reschedule</Text>
-          </TouchableOpacity>
         </View>
       );
     }
 
-    // State 3: Missed
+    // Under Review
+    if (isUnderReview) {
+      return (
+        <View style={styles.heroCard}>
+          <Text style={styles.heroTitle}>Under Review</Text>
+          <Text style={styles.heroSubLight}>MANDATORY 30-MIN VIDEO CALL</Text>
+          <Text style={[styles.heroNote, { marginTop: SPACING.sm }]}>
+            Your session is complete. We'll notify you within 24–48 hours.
+          </Text>
+        </View>
+      );
+    }
+
+    // Approved
+    if (isApproved) {
+      return (
+        <View style={[styles.heroCard, styles.heroCardApproved]}>
+          <Text style={styles.heroTitle}>You're Officially In! 🎉</Text>
+          <Text style={styles.heroSubLight}>PROFILE APPROVED — START MATCHING</Text>
+        </View>
+      );
+    }
+
+    // Rejected
+    if (reviewStatus === 'rejected') {
+      return (
+        <View style={[styles.heroCard, styles.heroCardRejected]}>
+          <Text style={styles.heroTitle}>Profile Not Approved</Text>
+          <Text style={styles.heroSubLight}>CONTACT SUPPORT</Text>
+          {session?.reviewNotes ? (
+            <Text style={[styles.heroNote, { marginTop: SPACING.sm }]}>{session.reviewNotes}</Text>
+          ) : null}
+        </View>
+      );
+    }
+
+    // Missed
     if (status === 'missed') {
       return (
-        <View style={[styles.card, styles.cardWarning]}>
-          <Text style={styles.cardIcon}>⚠️</Text>
-          <Text style={styles.cardTitle}>Session Missed</Text>
-          <Text style={styles.cardText}>
-            You missed your scheduled session. Please reschedule to continue.
-          </Text>
-          <TouchableOpacity 
-            style={styles.button}
+        <View style={styles.heroCard}>
+          <Text style={styles.heroTitle}>Session Missed</Text>
+          <Text style={styles.heroSubLight}>PLEASE RESCHEDULE</Text>
+          <TouchableOpacity
+            style={[styles.heroBtnWhite, { alignSelf: 'flex-start', marginTop: SPACING.md }]}
             onPress={() => router.push('/reschedule-reason')}
           >
-            <Text style={styles.buttonText}>Reschedule Now</Text>
+            <Text style={styles.heroBtnWhiteText}>Reschedule Now →</Text>
           </TouchableOpacity>
         </View>
       );
     }
 
-    // State 4: Under Review
-    if (status === 'completed' && session.reviewStatus === 'under_review') {
-      return (
-        <View style={styles.card}>
-          <Text style={styles.cardIcon}>🔍</Text>
-          <Text style={styles.cardTitle}>Session Complete - Under Review</Text>
-          <Text style={styles.cardText}>
-            Your profile is being reviewed. We'll notify you within 24-48 hours.
-          </Text>
-        </View>
-      );
-    }
+    // Default: Not Scheduled
+    return (
+      <View style={styles.heroCard}>
+        <Text style={styles.heroTitle}>Schedule Your Know Yourself Session</Text>
+        <Text style={styles.heroSubLight}>MANDATORY 30-MIN VIDEO CALL</Text>
+        <TouchableOpacity
+          style={[styles.heroBtnWhite, { alignSelf: 'flex-start', marginTop: SPACING.lg }]}
+          onPress={() => router.push('/schedule-intro')}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.heroBtnWhiteText}>Book My Session →</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
-    // State 5: Approved - Show Compatibility Quiz
-    if (session.reviewStatus === 'approved') {
-      return (
-        <>
-          <View style={[styles.card, styles.cardSuccess]}>
-            <Text style={styles.cardIcon}>🎉</Text>
-            <Text style={styles.cardTitle}>You're Officially In!</Text>
-            <Text style={styles.cardText}>
-              Congratulations! Your profile has been approved. Start finding matches!
-            </Text>
-          </View>
-          
-          <View style={[styles.card, { marginTop: SPACING.md }]}>
-            <Text style={styles.cardIcon}>💝</Text>
-            <Text style={styles.cardTitle}>Take Compatibility Quiz</Text>
-            <Text style={styles.cardText}>
-              Discover your perfect match with our compatibility assessment
-            </Text>
-            <TouchableOpacity 
-              style={styles.button}
-              onPress={() => router.push('/compatibility-quiz')}
-            >
-              <Text style={styles.buttonText}>Start Quiz</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      );
+  // === Step indicator (What Happens Next?) ===
+  const stepState = (n: 1 | 2 | 3): 'active' | 'done' | 'pending' => {
+    if (n === 1) {
+      if (status === 'not_scheduled') return 'active';
+      return 'done';
     }
+    if (n === 2) {
+      if (isUnderReview) return 'active';
+      if (isApproved || reviewStatus === 'rejected') return 'done';
+      return 'pending';
+    }
+    return isApproved ? 'active' : 'pending';
+  };
 
-    // State 6: Rejected
-    if (session.reviewStatus === 'rejected') {
-      return (
-        <View style={[styles.card, styles.cardError]}>
-          <Text style={styles.cardIcon}>😔</Text>
-          <Text style={styles.cardTitle}>Profile Not Approved</Text>
-          <Text style={styles.cardText}>
-            Unfortunately, your profile wasn't approved at this time.
-          </Text>
-          {session.reviewNotes && (
-            <Text style={styles.reviewNotes}>{session.reviewNotes}</Text>
+  const StepRow = ({
+    n,
+    title,
+    subtitle,
+  }: {
+    n: 1 | 2 | 3;
+    title: string;
+    subtitle: string;
+  }) => {
+    const state = stepState(n);
+    return (
+      <View style={[styles.stepRow, state === 'active' && styles.stepRowActive]}>
+        <View
+          style={[
+            styles.stepCircle,
+            state === 'active' && { backgroundColor: COLORS.primary },
+            state === 'done' && { backgroundColor: COLORS.success },
+          ]}
+        >
+          {state === 'done' ? (
+            <Ionicons name="checkmark" size={16} color={COLORS.white} />
+          ) : (
+            <Text style={[styles.stepNum, state === 'active' && { color: COLORS.white }]}>{n}</Text>
           )}
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Contact Support</Text>
-          </TouchableOpacity>
         </View>
-      );
-    }
-
-    return null;
+        <View style={{ flex: 1, marginLeft: SPACING.md }}>
+          <Text style={[styles.stepTitle, state === 'pending' && styles.stepTitleDim]}>{title}</Text>
+          <Text style={styles.stepSub}>{subtitle}</Text>
+        </View>
+      </View>
+    );
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
-    >
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>{greeting},</Text>
-        <Text style={styles.name}>{data.name}! 👋</Text>
+        <Text style={styles.brand}>Wingmann</Text>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
+            <Ionicons name="notifications-outline" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
+            <Ionicons name="heart-outline" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {renderContent()}
-    </ScrollView>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+        }
+      >
+        {/* Greeting */}
+        <Text style={styles.greeting}>
+          {greeting}, {data.name || 'there'}
+        </Text>
+        <Text style={styles.welcome}>Welcome to Wingmann ✨</Text>
+
+        {/* Hero Card */}
+        {renderHeroCard()}
+
+        {/* Info strip */}
+        {status === 'not_scheduled' && !loading && (
+          <View style={styles.infoStrip}>
+            <Ionicons name="shield-checkmark" size={22} color={COLORS.primary} />
+            <Text style={styles.infoStripText}>
+              Your profile is complete! Book your session to get verified
+            </Text>
+          </View>
+        )}
+
+        {/* What Happens Next */}
+        <Text style={styles.sectionLabel}>WHAT HAPPENS NEXT?</Text>
+        <StepRow n={1} title="Book session" subtitle="Choose a slot for your verification call." />
+        <StepRow n={2} title="Get verified" subtitle="Our team completes your safety check." />
+        <StepRow n={3} title="Meet matches" subtitle="Unlock your curated dating pool." />
+
+        {/* Locked feature cards row */}
+        <View style={styles.lockedRow}>
+          <LockedCard
+            icon="bulb-outline"
+            title="Compatibility Quiz"
+            unlocked={isApproved}
+            onPress={() => router.push('/compatibility-quiz' as any)}
+          />
+          <LockedCard
+            icon="color-palette-outline"
+            title="Curate Your Vibe"
+            unlocked={isApproved}
+            onPress={() => {}}
+          />
+        </View>
+
+        <View style={{ height: SPACING.xxl }} />
+      </ScrollView>
+
+      <BottomTabBar />
+    </SafeAreaView>
   );
 }
 
+// === Locked/Unlocked feature card ===
+const LockedCard = ({
+  icon,
+  title,
+  unlocked,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  unlocked: boolean;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity
+    style={[styles.lockedCard, unlocked && styles.lockedCardActive]}
+    activeOpacity={unlocked ? 0.85 : 1}
+    onPress={unlocked ? onPress : undefined}
+    disabled={!unlocked}
+  >
+    <View style={styles.lockIconWrap}>
+      <Ionicons
+        name={unlocked ? 'sparkles' : 'lock-closed'}
+        size={16}
+        color={unlocked ? COLORS.primary : COLORS.textSecondary}
+      />
+    </View>
+    <Ionicons
+      name={icon}
+      size={28}
+      color={unlocked ? COLORS.primary : COLORS.textSecondary}
+      style={{ marginTop: SPACING.md }}
+    />
+    <Text style={[styles.lockedTitle, !unlocked && { color: COLORS.textSecondary }]}>{title}</Text>
+    <Text style={styles.lockedSub}>{unlocked ? 'Tap to start' : 'Unlocks after Session'}</Text>
+  </TouchableOpacity>
+);
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  scrollContent: { padding: SPACING.lg, paddingTop: SPACING.xxl },
-  header: { marginBottom: SPACING.xl },
-  greeting: { ...TYPOGRAPHY.h3, color: COLORS.textSecondary },
-  name: { ...TYPOGRAPHY.h1, color: COLORS.primary, marginTop: SPACING.xs },
-  loadingText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, textAlign: 'center', marginTop: SPACING.xl },
-  
-  card: { 
-    backgroundColor: COLORS.white, 
-    padding: SPACING.lg, 
-    borderRadius: BORDER_RADIUS.lg, 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 2 }, 
-    shadowOpacity: 0.1, 
-    shadowRadius: 8, 
-    elevation: 3,
-    marginBottom: SPACING.md,
-  },
-  cardSuccess: { backgroundColor: '#F0FFF4', borderWidth: 1, borderColor: COLORS.success },
-  cardWarning: { backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#F59E0B' },
-  cardError: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: COLORS.error },
-  cardIcon: { fontSize: 48, textAlign: 'center', marginBottom: SPACING.md },
-  cardTitle: { ...TYPOGRAPHY.h3, color: COLORS.text, marginBottom: SPACING.sm, textAlign: 'center' },
-  cardText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, textAlign: 'center', marginBottom: SPACING.lg },
-  
-  sessionInfo: { alignItems: 'center', marginVertical: SPACING.md },
-  sessionDate: { ...TYPOGRAPHY.bodyBold, color: COLORS.text, marginBottom: SPACING.xs },
-  sessionTime: { ...TYPOGRAPHY.h2, color: COLORS.primary, marginBottom: SPACING.xs },
-  countdown: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
-  
-  button: { 
-    backgroundColor: COLORS.primary, 
-    padding: SPACING.md, 
-    borderRadius: BORDER_RADIUS.md, 
-    alignItems: 'center',
-    marginTop: SPACING.sm,
-  },
-  buttonText: { ...TYPOGRAPHY.button, color: COLORS.white },
-  
-  secondaryButton: { 
-    backgroundColor: 'transparent', 
-    borderWidth: 1, 
-    borderColor: COLORS.primary, 
-    padding: SPACING.md, 
-    borderRadius: BORDER_RADIUS.md, 
-    alignItems: 'center',
-    marginTop: SPACING.sm,
-  },
-  secondaryButtonText: { ...TYPOGRAPHY.button, color: COLORS.primary },
-  
-  meetLinkButton: { 
-    backgroundColor: '#4285F4', 
-    padding: SPACING.md, 
-    borderRadius: BORDER_RADIUS.md, 
-    alignItems: 'center',
-    marginTop: SPACING.sm,
-  },
-  meetLinkText: { ...TYPOGRAPHY.button, color: COLORS.white },
+  safe: { flex: 1, backgroundColor: COLORS.background },
 
-  meetPendingBox: {
-    backgroundColor: COLORS.primary + '10',
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    marginTop: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.primary + '30',
-    borderStyle: 'dashed',
-  },
-  meetPendingText: { ...TYPOGRAPHY.caption, color: COLORS.primary, textAlign: 'center' },
-
-  addCalBtn: {
-    backgroundColor: COLORS.primary + '15',
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-    marginTop: SPACING.sm,
-  },
-  addCalText: { ...TYPOGRAPHY.button, color: COLORS.primary, fontSize: 15 },
-
-  cardHeaderRow: {
+  // Header
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.background,
   },
-  statusPill: {
+  brand: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.primary,
+    letterSpacing: 0.2,
+  },
+  headerIcons: { flexDirection: 'row' },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
+
+  scrollContent: { padding: SPACING.lg, paddingTop: SPACING.md },
+
+  greeting: { ...TYPOGRAPHY.h1, color: COLORS.text, fontSize: 28 },
+  welcome: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, marginTop: 4, marginBottom: SPACING.lg },
+
+  // Hero
+  heroCard: {
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  heroCardApproved: { backgroundColor: COLORS.success },
+  heroCardRejected: { backgroundColor: COLORS.error },
+  heroTitle: { ...TYPOGRAPHY.h2, color: COLORS.white, marginBottom: 4 },
+  heroSub: { ...TYPOGRAPHY.body, color: COLORS.white, opacity: 0.9, marginBottom: SPACING.md },
+  heroSubLight: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.white,
+    opacity: 0.85,
+    letterSpacing: 1.5,
+    fontWeight: '700',
+    marginBottom: SPACING.md,
+  },
+  heroPillRow: { flexDirection: 'row', marginBottom: SPACING.sm },
+  confirmedPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.success + '18',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
     borderRadius: BORDER_RADIUS.round,
   },
-  statusDot: {
+  confirmedDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.success,
+    backgroundColor: '#4ADE80',
     marginRight: 6,
   },
-  statusPillText: { ...TYPOGRAPHY.caption, color: COLORS.success, fontWeight: '600' },
-  calendarIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primary + '12',
+  confirmedPillText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  heroActionsRow: { flexDirection: 'row', gap: SPACING.sm as any, flexWrap: 'wrap' },
+  heroBtnWhite: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    paddingVertical: 10,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.round,
+    marginRight: SPACING.sm,
+  },
+  heroBtnWhiteText: { ...TYPOGRAPHY.button, color: COLORS.primary, fontSize: 14, marginLeft: 6 },
+  heroBtnGhost: {
+    paddingVertical: 10,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.round,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
+  },
+  heroBtnGhostText: { ...TYPOGRAPHY.button, color: COLORS.white, fontSize: 14 },
+  heroNote: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.white,
+    opacity: 0.85,
+    marginTop: SPACING.sm,
+    lineHeight: 18,
+  },
+  loadingText: { ...TYPOGRAPHY.body, color: COLORS.white, textAlign: 'center' },
+
+  // Info strip
+  infoStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '15',
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  infoStripText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    flex: 1,
+    marginLeft: SPACING.sm,
+    fontSize: 14,
+  },
+
+  // Steps
+  sectionLabel: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    letterSpacing: 1.5,
+    fontWeight: '700',
+    marginBottom: SPACING.md,
+    marginTop: SPACING.sm,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    backgroundColor: 'transparent',
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: 4,
+  },
+  stepRowActive: {
+    backgroundColor: COLORS.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  stepCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.lightGray,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  calendarIconText: { fontSize: 18 },
-  
-  reviewNotes: { 
-    ...TYPOGRAPHY.caption, 
-    color: COLORS.error, 
-    backgroundColor: COLORS.white, 
-    padding: SPACING.sm, 
-    borderRadius: BORDER_RADIUS.sm, 
-    marginVertical: SPACING.sm 
+  stepNum: { ...TYPOGRAPHY.bodyBold, color: COLORS.textSecondary, fontSize: 14 },
+  stepTitle: { ...TYPOGRAPHY.bodyBold, color: COLORS.text },
+  stepTitleDim: { color: COLORS.textSecondary },
+  stepSub: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginTop: 2 },
+
+  // Locked cards
+  lockedRow: { flexDirection: 'row', marginTop: SPACING.lg, gap: SPACING.sm as any },
+  lockedCard: {
+    flex: 1,
+    backgroundColor: COLORS.lightGray + '60',
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    minHeight: 130,
+    marginHorizontal: 4,
+    position: 'relative',
+    opacity: 0.85,
   },
+  lockedCardActive: {
+    backgroundColor: COLORS.white,
+    opacity: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  lockIconWrap: {
+    position: 'absolute',
+    top: SPACING.sm,
+    right: SPACING.sm,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lockedTitle: {
+    ...TYPOGRAPHY.bodyBold,
+    color: COLORS.text,
+    marginTop: SPACING.sm,
+    fontSize: 15,
+  },
+  lockedSub: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginTop: 4 },
 });
