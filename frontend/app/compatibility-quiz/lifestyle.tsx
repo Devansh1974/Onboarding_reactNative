@@ -19,6 +19,9 @@ interface Answers {
 
 export default function LifestyleQuiz() {
   const { data } = useOnboarding();
+  const [answers, setAnswers] = useState<Answers>({});
+  const [loading, setLoading] = useState(false);
+
   // Submit Final Answers
   const handleSubmit = async () => {
     if (!answers.q1 || !answers.q2 || !answers.q3 || !answers.q4 || !answers.q5) {

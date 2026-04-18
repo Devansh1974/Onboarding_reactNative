@@ -49,7 +49,7 @@ type Stats = {
 type Tab = 'all' | 'scheduled' | 'completed' | 'approved';
 
 export default function AdminDashboardScreen() {
-  const { admin, logout } = useAdmin();
+  const { admin, logout, isLoading } = useAdmin();
   const rootNavigationState = useRootNavigationState();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -64,15 +64,29 @@ export default function AdminDashboardScreen() {
   useEffect(() => {
     if (admin) {
       loadData();
+      // Setup live polling every 10 seconds
+      const interval = setInterval(() => {
+        loadData(true); // pass true for silent background refresh
+      }, 10000);
+      return () => clearInterval(interval);
     }
   }, [admin]);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FAF9F8', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primaryDark} />
+      </View>
+    );
+  }
 
   if (!admin) {
     return <Redirect href="/admin/login" />;
   }
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isSilent = false) => {
     try {
+      if (!isSilent) setLoading(true);
       const [sRes, statsRes] = await Promise.all([
         fetch(`${BACKEND_URL}/api/admin/sessions`),
         fetch(`${BACKEND_URL}/api/admin/stats`),
