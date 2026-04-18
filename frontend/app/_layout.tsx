@@ -17,14 +17,9 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name="index" />
-            <Stack.Screen name="welcome" />
-            <Stack.Screen name="phone" />
             <Stack.Screen name="otp" />
             <Stack.Screen name="gender" />
-            <Stack.Screen name="preference" />
             <Stack.Screen name="name" />
-            <Stack.Screen name="intro1" />
-            <Stack.Screen name="intro2" />
             <Stack.Screen name="home" />
             <Stack.Screen name="admin" />
           </Stack>
