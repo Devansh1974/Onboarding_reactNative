@@ -55,6 +55,8 @@ npx expo start --lan
 
 To access the Admin Dashboard, use the following default access keys:
 
+http://localhost:8081/admin/dashboard
+
 - **Email:** `admin@wingmann.com`
 - **Password:** `admin123`
 
