@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Keyboa
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CustomButton } from '../../src/components/CustomButton';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { useOnboarding } from '../../src/context/OnboardingContext';
 
@@ -12,23 +11,18 @@ const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 interface Answers {
   q1?: string;
   q2?: string;
-  q3?: number; // 1-5 scale
-  q4?: number; // 1-5 scale
+  q3?: number;
+  q4?: number;
   q5?: string;
 }
 
 export default function LifestyleQuiz() {
   const { data } = useOnboarding();
+  const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState<Answers>({});
   const [loading, setLoading] = useState(false);
 
-  // Submit Final Answers
   const handleSubmit = async () => {
-    if (!answers.q1 || !answers.q2 || !answers.q3 || !answers.q4 || !answers.q5) {
-      Alert.alert('Incomplete', 'Please answer all questions before proceeding.');
-      return;
-    }
-    
     setLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
@@ -45,7 +39,7 @@ export default function LifestyleQuiz() {
       });
       const result = await response.json();
       if (result.success) {
-        router.replace('/compatibility-quiz/emotional' as any);
+        router.replace('/compatibility-quiz' as any);
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
@@ -57,11 +51,16 @@ export default function LifestyleQuiz() {
     }
   };
 
-  const prevStep = () => {
-    router.back();
+  const nextStep = () => {
+    if (step < 5) setStep(step + 1);
+    else handleSubmit();
   };
 
-  // Generic Button to go to next step
+  const prevStep = () => {
+    if (step > 1) setStep(step - 1);
+    else router.back();
+  };
+
   const renderNextArrow = (disabled = false) => (
     <View style={styles.arrowContainer}>
       <TouchableOpacity 
@@ -74,7 +73,6 @@ export default function LifestyleQuiz() {
     </View>
   );
 
-  // Renders the options for Question 1 & 2 (2x2 Grid)
   const renderGridOptions = (options: {id: string, text: string, icon: keyof typeof Ionicons.glyphMap}[], currentVal: string | undefined, field: keyof Answers) => (
     <View style={styles.gridContainer}>
       {options.map((opt) => {
@@ -103,7 +101,6 @@ export default function LifestyleQuiz() {
     </View>
   );
 
-  // Renders the options for Question 3 & 4 (Scale 1 to 5 emoji list)
   const renderScaleOptions = (currentVal: number | undefined, field: keyof Answers) => {
     const scales = [
       { id: 5, text: 'Strongly agree', icon: 'happy' },
@@ -123,11 +120,7 @@ export default function LifestyleQuiz() {
               style={styles.scaleRow}
               onPress={() => setAnswers(prev => ({...prev, [field]: s.id}))}
             >
-              <Ionicons 
-                name={s.icon} 
-                size={34} 
-                color={isSelected ? COLORS.primary : COLORS.gray} 
-              />
+              <Ionicons name={s.icon} size={34} color={isSelected ? COLORS.primary : COLORS.gray} />
               <Text style={[styles.scaleText, isSelected && styles.scaleTextSelected]}>{s.text}</Text>
             </TouchableOpacity>
           );
@@ -138,7 +131,6 @@ export default function LifestyleQuiz() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={prevStep}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
@@ -146,68 +138,71 @@ export default function LifestyleQuiz() {
         <Text style={styles.headerTitle}>Lifestyle and Value</Text>
       </View>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-        style={{ flex: 1 }}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
-          <Text style={styles.formInstruction}>Answer the following questions carefully.</Text>
-
-          {/* QUESTION 1 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>1. How do you usually like to spend your weekends?</Text>
-            {renderGridOptions([
-              { id: 'home', text: 'Relaxing at home', icon: 'cafe' },
-              { id: 'explore', text: 'Going out, exploring places.', icon: 'map' },
-              { id: 'productive', text: 'Doing something productive.', icon: 'laptop' },
-              { id: 'mood', text: 'Mixing it up depends on mood.', icon: 'color-palette' },
-            ], answers.q1, 'q1')}
+          <View style={styles.pillWrap}>
+            <View style={styles.pill}>
+              <Text style={styles.pillText}>QUESTION {step} OF 5</Text>
+            </View>
           </View>
 
-          {/* QUESTION 2 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>2. When it comes to managing money as a couple, I prefer:</Text>
-            {renderGridOptions([
-              { id: 'together', text: 'Putting it all together.', icon: 'wallet' },
-              { id: 'open', text: 'Keeping our own accounts but being open about stuff.', icon: 'pie-chart' },
-              { id: 'split', text: 'Splitting things in a way that feels fair for both.', icon: 'git-compare' },
-              { id: 'separate', text: 'Keeping finances totally separate.', icon: 'lock-closed' },
-            ], answers.q2, 'q2')}
-          </View>
+          {step === 1 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>How do you usually like to spend your weekends?</Text>
+              {renderGridOptions([
+                { id: 'home', text: 'Relaxing at home', icon: 'cafe' },
+                { id: 'explore', text: 'Going out, exploring places.', icon: 'map' },
+                { id: 'productive', text: 'Doing something productive.', icon: 'laptop' },
+                { id: 'mood', text: 'Mixing it up depends on mood.', icon: 'color-palette' },
+              ], answers.q1, 'q1')}
+              {renderNextArrow(!answers.q1)}
+            </View>
+          )}
 
-          {/* QUESTION 3 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>3. I feel most balanced when my partner and I have similar daily habits and energy levels.</Text>
-            {renderScaleOptions(answers.q3, 'q3')}
-          </View>
+          {step === 2 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>When it comes to managing money as a couple, I prefer:</Text>
+              {renderGridOptions([
+                { id: 'together', text: 'Putting it all together.', icon: 'wallet' },
+                { id: 'open', text: 'Keeping our own accounts but being open about stuff.', icon: 'pie-chart' },
+                { id: 'split', text: 'Splitting things in a way that feels fair for both.', icon: 'git-compare' },
+                { id: 'separate', text: 'Keeping finances totally separate.', icon: 'lock-closed' },
+              ], answers.q2, 'q2')}
+              {renderNextArrow(!answers.q2)}
+            </View>
+          )}
 
-          {/* QUESTION 4 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>4. If I had to choose between spending time on my goals or my relationship, I'd usually choose my goals.</Text>
-            {renderScaleOptions(answers.q4, 'q4')}
-          </View>
+          {step === 3 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>I feel most balanced when my partner and I have similar daily habits and energy levels.</Text>
+              {renderScaleOptions(answers.q3, 'q3')}
+              {renderNextArrow(!answers.q3)}
+            </View>
+          )}
 
-          {/* QUESTION 5 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>5. What's one thing that really matters to you in a relationship?</Text>
-            <TextInput 
-              style={styles.textInput}
-              placeholder="Write your answer"
-              placeholderTextColor={COLORS.textSecondary}
-              multiline
-              maxLength={200}
-              value={answers.q5 || ''}
-              onChangeText={(txt) => setAnswers(prev => ({...prev, q5: txt}))}
-            />
-          </View>
+          {step === 4 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>If I had to choose between spending time on my goals or my relationship, I'd usually choose my goals.</Text>
+              {renderScaleOptions(answers.q4, 'q4')}
+              {renderNextArrow(!answers.q4)}
+            </View>
+          )}
 
-          <TouchableOpacity 
-             style={styles.submitBtn} 
-             onPress={handleSubmit}
-             disabled={loading}
-          >
-             <Text style={styles.submitBtnText}>{loading ? "Saving..." : "Save & Continue"}</Text>
-          </TouchableOpacity>
+          {step === 5 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>What's one thing that really matters to you in a relationship?</Text>
+              <TextInput 
+                style={styles.textInput}
+                placeholder="Write your answer"
+                placeholderTextColor={COLORS.textSecondary}
+                multiline
+                maxLength={200}
+                value={answers.q5 || ''}
+                onChangeText={(txt) => setAnswers(prev => ({...prev, q5: txt}))}
+              />
+              {renderNextArrow(!answers.q5)}
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -215,159 +210,27 @@ export default function LifestyleQuiz() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.primaryDark,
-    fontSize: 20,
-    marginLeft: SPACING.sm,
-  },
-  content: {
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: 100, // Space for scrolling past keyboard
-    flexGrow: 1,
-  },
-  pillWrap: {
-    alignItems: 'center',
-    marginBottom: SPACING.xl,
-  },
-  pill: {
-    backgroundColor: COLORS.primaryLight + '20',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: BORDER_RADIUS.round,
-  },
-  pillText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.primaryDark,
-    fontWeight: '700',
-    letterSpacing: 1,
-    fontSize: 10,
-  },
-  stepBlock: {
-    flex: 1,
-  },
-  questionTitle: {
-    ...TYPOGRAPHY.h2,
-    fontSize: 24,
-    color: COLORS.black,
-    marginBottom: SPACING.xl,
-    lineHeight: 32,
-  },
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: SPACING.sm as any,
-  },
-  gridCard: {
-    width: '48%',
-    backgroundColor: COLORS.white,
-    borderWidth: 1.5,
-    borderColor: COLORS.primaryLight + '40',
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    minHeight: 180,
-    marginBottom: SPACING.md,
-    justifyContent: 'space-between',
-    position: 'relative',
-  },
-  gridCardSelected: {
-    borderColor: COLORS.primary,
-  },
-  gridCardText: {
-    ...TYPOGRAPHY.body,
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  gridIconWrap: {
-    alignSelf: 'center',
-    marginTop: SPACING.md,
-    backgroundColor: COLORS.cardBackground,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.round,
-  },
-  checkBadge: {
-    position: 'absolute',
-    bottom: -10,
-    right: -10,
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-  },
-  scaleContainer: {
-    marginTop: SPACING.md,
-  },
-  scaleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: SPACING.md,
-  },
-  scaleText: {
-    ...TYPOGRAPHY.body,
-    marginLeft: SPACING.md,
-    color: COLORS.text,
-  },
-  scaleTextSelected: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: COLORS.primaryLight + '60',
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    minHeight: 120,
-    ...TYPOGRAPHY.body,
-    textAlignVertical: 'top',
-    color: COLORS.text,
-  },
-  arrowContainer: {
-    alignItems: 'center',
-    marginTop: SPACING.xxl,
-  },
-  roundArrowBtn: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: COLORS.primaryDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  submitBtn: {
-    backgroundColor: '#472B52',
-    paddingVertical: 18,
-    borderRadius: BORDER_RADIUS.xl,
-    alignItems: 'center',
-    marginVertical: SPACING.xl,
-  },
-  submitBtnText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.white,
-    fontSize: 16,
-  },
-  formInstruction: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
-  }
+  container: { flex: 1, backgroundColor: COLORS.white },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
+  backButton: { width: 40, height: 40, justifyContent: 'center' },
+  headerTitle: { ...TYPOGRAPHY.h3, color: COLORS.primaryDark, fontSize: 20, marginLeft: SPACING.sm },
+  content: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: 100, flexGrow: 1 },
+  pillWrap: { alignItems: 'center', marginBottom: SPACING.xl },
+  pill: { backgroundColor: COLORS.primaryLight + '20', paddingHorizontal: 16, paddingVertical: 6, borderRadius: BORDER_RADIUS.round },
+  pillText: { ...TYPOGRAPHY.caption, color: COLORS.primaryDark, fontWeight: '700', letterSpacing: 1, fontSize: 10 },
+  stepBlock: { flex: 1 },
+  questionTitle: { ...TYPOGRAPHY.h2, fontSize: 24, color: COLORS.black, marginBottom: SPACING.xl, lineHeight: 32 },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm as any },
+  gridCard: { width: '48%', backgroundColor: COLORS.white, borderWidth: 1.5, borderColor: COLORS.primaryLight + '40', borderRadius: BORDER_RADIUS.lg, padding: SPACING.md, minHeight: 180, marginBottom: SPACING.md, justifyContent: 'space-between', position: 'relative' },
+  gridCardSelected: { borderColor: COLORS.primary },
+  gridCardText: { ...TYPOGRAPHY.body, fontSize: 14, color: COLORS.text, lineHeight: 20 },
+  gridIconWrap: { alignSelf: 'center', marginTop: SPACING.md, backgroundColor: COLORS.cardBackground, padding: SPACING.md, borderRadius: BORDER_RADIUS.round },
+  checkBadge: { position: 'absolute', bottom: -10, right: -10, backgroundColor: COLORS.white, borderRadius: 12 },
+  scaleContainer: { marginTop: SPACING.md },
+  scaleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.md },
+  scaleText: { ...TYPOGRAPHY.body, marginLeft: SPACING.md, color: COLORS.text },
+  scaleTextSelected: { color: COLORS.primary, fontWeight: '600' },
+  textInput: { borderWidth: 1, borderColor: COLORS.primaryLight + '60', borderRadius: BORDER_RADIUS.lg, padding: SPACING.lg, minHeight: 120, ...TYPOGRAPHY.body, textAlignVertical: 'top', color: COLORS.text },
+  arrowContainer: { alignItems: 'center', marginTop: SPACING.xxl },
+  roundArrowBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primaryDark, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
 });

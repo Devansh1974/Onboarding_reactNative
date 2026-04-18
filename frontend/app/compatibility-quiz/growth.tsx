@@ -8,11 +8,11 @@ import { useOnboarding } from '../../src/context/OnboardingContext';
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 interface Answers {
-  q1?: number; // scale
-  q2?: number; // scale
-  q3?: number; // scale
-  q4?: string; // grid
-  q5?: string; // grid
+  q1?: number;
+  q2?: number;
+  q3?: number;
+  q4?: string;
+  q5?: string;
 }
 
 export default function GrowthQuiz() {
@@ -22,10 +22,6 @@ export default function GrowthQuiz() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!answers.q1 || !answers.q2 || !answers.q3 || !answers.q4 || !answers.q5) {
-      Alert.alert('Incomplete', 'Please answer all questions before proceeding.');
-      return;
-    }
     setLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
@@ -33,17 +29,12 @@ export default function GrowthQuiz() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: data.phoneNumber,
-          data: {
-            compatibilityQuiz: {
-              growthAndReadiness: answers
-            }
-          }
+          data: { compatibilityQuiz: { growthAndReadiness: answers } }
         }),
       });
       const result = await response.json();
       if (result.success) {
-        // Instead of Alert, go dynamically to the final quiz complete screen
-        router.push('/compatibility-quiz/quiz-complete' as any);
+        router.replace('/compatibility-quiz' as any);
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
@@ -55,17 +46,12 @@ export default function GrowthQuiz() {
     }
   };
 
-  const prevStep = () => {
-    router.back();
-  };
+  const nextStep = () => { if (step < 5) setStep(step + 1); else handleSubmit(); };
+  const prevStep = () => { if (step > 1) setStep(step - 1); else router.back(); };
 
   const renderNextArrow = (disabled = false) => (
     <View style={styles.arrowContainer}>
-      <TouchableOpacity 
-        style={[styles.roundArrowBtn, disabled && { opacity: 0.5 }]} 
-        onPress={nextStep}
-        disabled={disabled || loading}
-      >
+      <TouchableOpacity style={[styles.roundArrowBtn, disabled && { opacity: 0.5 }]} onPress={nextStep} disabled={disabled || loading}>
         <Ionicons name="arrow-forward" size={24} color={COLORS.white} />
       </TouchableOpacity>
     </View>
@@ -76,23 +62,13 @@ export default function GrowthQuiz() {
       {options.map((opt) => {
         const isSelected = currentVal === opt.id;
         return (
-          <TouchableOpacity 
-            key={opt.id} 
-            style={[styles.gridCard, isSelected && styles.gridCardSelected]}
-            onPress={() => setAnswers(prev => ({...prev, [field]: opt.id}))}
-            activeOpacity={0.8}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.gridCardText}>{opt.text}</Text>
-            </View>
+          <TouchableOpacity key={opt.id} style={[styles.gridCard, isSelected && styles.gridCardSelected]}
+            onPress={() => setAnswers(prev => ({...prev, [field]: opt.id}))} activeOpacity={0.8}>
+            <View style={{ flex: 1 }}><Text style={styles.gridCardText}>{opt.text}</Text></View>
             <View style={[styles.gridIconWrap, isSelected && { backgroundColor: COLORS.primary }]}>
               <Ionicons name={opt.icon} size={38} color={isSelected ? COLORS.white : COLORS.primary} />
             </View>
-            {isSelected && (
-              <View style={styles.checkBadge}>
-                <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
-              </View>
-            )}
+            {isSelected && (<View style={styles.checkBadge}><Ionicons name="checkmark-circle" size={24} color={COLORS.primary} /></View>)}
           </TouchableOpacity>
         );
       })}
@@ -107,17 +83,12 @@ export default function GrowthQuiz() {
       { id: 2, text: 'Okay-okay', icon: 'sad-outline' },
       { id: 1, text: 'Strongly disagree', icon: 'sad' },
     ] as const;
-
     return (
       <View style={styles.scaleContainer}>
         {scales.map((s) => {
           const isSelected = currentVal === s.id;
           return (
-            <TouchableOpacity 
-              key={s.id} 
-              style={styles.scaleRow}
-              onPress={() => setAnswers(prev => ({...prev, [field]: s.id}))}
-            >
+            <TouchableOpacity key={s.id} style={styles.scaleRow} onPress={() => setAnswers(prev => ({...prev, [field]: s.id}))}>
               <Ionicons name={s.icon as any} size={34} color={isSelected ? COLORS.primary : COLORS.gray} />
               <Text style={[styles.scaleText, isSelected && styles.scaleTextSelected]}>{s.text}</Text>
             </TouchableOpacity>
@@ -133,60 +104,64 @@ export default function GrowthQuiz() {
         <TouchableOpacity style={styles.backButton} onPress={prevStep}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Growth, Readiness & Emotional...</Text>
+        <Text style={styles.headerTitle}>Growth & Emotional Maturity</Text>
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
-          <Text style={styles.formInstruction}>Answer the following questions carefully.</Text>
-
-          {/* Q1 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>1. I believe relationships help both people grow.</Text>
-            {renderScaleOptions(answers.q1, 'q1')}
+          <View style={styles.pillWrap}>
+            <View style={styles.pill}><Text style={styles.pillText}>QUESTION {step} OF 5</Text></View>
           </View>
 
-          {/* Q2 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>2. When I realise I've hurt someone, I try to take responsibility and reconnect.</Text>
-            {renderScaleOptions(answers.q2, 'q2')}
-          </View>
+          {step === 1 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>I believe relationships help both people grow.</Text>
+              {renderScaleOptions(answers.q1, 'q1')}
+              {renderNextArrow(!answers.q1)}
+            </View>
+          )}
 
-          {/* Q3 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>3. I rarely talk about my feelings and emotions.</Text>
-            {renderScaleOptions(answers.q3, 'q3')}
-          </View>
+          {step === 2 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>When I realise I've hurt someone, I try to take responsibility and reconnect.</Text>
+              {renderScaleOptions(answers.q2, 'q2')}
+              {renderNextArrow(!answers.q2)}
+            </View>
+          )}
 
-          {/* Q4 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>4. Where are you currently at in your dating journey?</Text>
-            {renderGridOptions([
-              { id: 'meaningful', text: 'Ready to build something meaningful', icon: 'heart-outline' },
-              { id: 'cautious', text: 'Open but cautious', icon: 'shield-checkmark-outline' },
-              { id: 'exploring', text: 'Still exploring what I really want', icon: 'compass-outline' },
-              { id: 'healing', text: 'Healing and taking things slow', icon: 'bed-outline' },
-            ], answers.q4, 'q4')}
-          </View>
+          {step === 3 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>I rarely talk about my feelings and emotions.</Text>
+              {renderScaleOptions(answers.q3, 'q3')}
+              {renderNextArrow(!answers.q3)}
+            </View>
+          )}
 
-          {/* Q5 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>5. I've learned the most about relationships from...</Text>
-            {renderGridOptions([
-              { id: 'past', text: 'My past relationships', icon: 'person-outline' },
-              { id: 'family', text: 'Watching family or friends', icon: 'people-outline' },
-              { id: 'growth', text: 'Personal growth and self-reflection', icon: 'leaf-outline' },
-              { id: 'media', text: 'Movies, books, or social media', icon: 'tv-outline' },
-            ], answers.q5, 'q5')}
-          </View>
+          {step === 4 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>Where are you currently at in your dating journey?</Text>
+              {renderGridOptions([
+                { id: 'meaningful', text: 'Ready to build something meaningful', icon: 'heart-outline' },
+                { id: 'cautious', text: 'Open but cautious', icon: 'shield-checkmark-outline' },
+                { id: 'exploring', text: 'Still exploring what I really want', icon: 'compass-outline' },
+                { id: 'healing', text: 'Healing and taking things slow', icon: 'bed-outline' },
+              ], answers.q4, 'q4')}
+              {renderNextArrow(!answers.q4)}
+            </View>
+          )}
 
-          <TouchableOpacity 
-             style={styles.submitBtn} 
-             onPress={handleSubmit}
-             disabled={loading}
-          >
-             <Text style={styles.submitBtnText}>{loading ? "Saving..." : "Save & Complete Quiz"}</Text>
-          </TouchableOpacity>
+          {step === 5 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>I've learned the most about relationships from...</Text>
+              {renderGridOptions([
+                { id: 'past', text: 'My past relationships', icon: 'person-outline' },
+                { id: 'family', text: 'Watching family or friends', icon: 'people-outline' },
+                { id: 'growth', text: 'Personal growth and self-reflection', icon: 'leaf-outline' },
+                { id: 'media', text: 'Movies, books, or social media', icon: 'tv-outline' },
+              ], answers.q5, 'q5')}
+              {renderNextArrow(!answers.q5)}
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -216,13 +191,4 @@ const styles = StyleSheet.create({
   scaleTextSelected: { color: COLORS.primary, fontWeight: '600' },
   arrowContainer: { alignItems: 'center', marginTop: SPACING.xxl },
   roundArrowBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primaryDark, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  submitBtn: {
-    backgroundColor: '#472B52',
-    paddingVertical: 18,
-    borderRadius: BORDER_RADIUS.xl,
-    alignItems: 'center',
-    marginVertical: SPACING.xl,
-  },
-  submitBtnText: { ...TYPOGRAPHY.button, color: COLORS.white, fontSize: 16 },
-  formInstruction: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginBottom: SPACING.md }
 });

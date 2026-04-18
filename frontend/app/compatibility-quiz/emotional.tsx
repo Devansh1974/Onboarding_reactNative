@@ -10,9 +10,9 @@ const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 interface Answers {
   q1?: string;
   q2?: string;
-  q3?: number; // 1-5 scale
-  q4?: number; // 1-5 scale
-  q5?: number; // 1-5 scale
+  q3?: number;
+  q4?: number;
+  q5?: number;
 }
 
 export default function EmotionalCommunicationQuiz() {
@@ -22,10 +22,6 @@ export default function EmotionalCommunicationQuiz() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!answers.q1 || !answers.q2 || !answers.q3 || !answers.q4 || !answers.q5) {
-      Alert.alert('Incomplete', 'Please answer all questions before proceeding.');
-      return;
-    }
     setLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
@@ -42,7 +38,7 @@ export default function EmotionalCommunicationQuiz() {
       });
       const result = await response.json();
       if (result.success) {
-        router.replace('/compatibility-quiz/attachment' as any);
+        router.replace('/compatibility-quiz' as any);
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
@@ -54,8 +50,14 @@ export default function EmotionalCommunicationQuiz() {
     }
   };
 
+  const nextStep = () => {
+    if (step < 5) setStep(step + 1);
+    else handleSubmit();
+  };
+
   const prevStep = () => {
-    router.back();
+    if (step > 1) setStep(step - 1);
+    else router.back();
   };
 
   const renderNextArrow = (disabled = false) => (
@@ -75,23 +77,13 @@ export default function EmotionalCommunicationQuiz() {
       {options.map((opt) => {
         const isSelected = currentVal === opt.id;
         return (
-          <TouchableOpacity 
-            key={opt.id} 
-            style={[styles.gridCard, isSelected && styles.gridCardSelected]}
-            onPress={() => setAnswers(prev => ({...prev, [field]: opt.id}))}
-            activeOpacity={0.8}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.gridCardText}>{opt.text}</Text>
-            </View>
+          <TouchableOpacity key={opt.id} style={[styles.gridCard, isSelected && styles.gridCardSelected]}
+            onPress={() => setAnswers(prev => ({...prev, [field]: opt.id}))} activeOpacity={0.8}>
+            <View style={{ flex: 1 }}><Text style={styles.gridCardText}>{opt.text}</Text></View>
             <View style={[styles.gridIconWrap, isSelected && { backgroundColor: COLORS.primary }]}>
               <Ionicons name={opt.icon} size={38} color={isSelected ? COLORS.white : COLORS.primary} />
             </View>
-            {isSelected && (
-              <View style={styles.checkBadge}>
-                <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
-              </View>
-            )}
+            {isSelected && (<View style={styles.checkBadge}><Ionicons name="checkmark-circle" size={24} color={COLORS.primary} /></View>)}
           </TouchableOpacity>
         );
       })}
@@ -106,22 +98,13 @@ export default function EmotionalCommunicationQuiz() {
       { id: 2, text: 'Okay-okay', icon: 'sad-outline' },
       { id: 1, text: 'Strongly disagree', icon: 'sad' },
     ] as const;
-
     return (
       <View style={styles.scaleContainer}>
         {scales.map((s) => {
           const isSelected = currentVal === s.id;
           return (
-            <TouchableOpacity 
-              key={s.id} 
-              style={styles.scaleRow}
-              onPress={() => setAnswers(prev => ({...prev, [field]: s.id}))}
-            >
-              <Ionicons 
-                name={s.icon as any} 
-                size={34} 
-                color={isSelected ? COLORS.primary : COLORS.gray} 
-              />
+            <TouchableOpacity key={s.id} style={styles.scaleRow} onPress={() => setAnswers(prev => ({...prev, [field]: s.id}))}>
+              <Ionicons name={s.icon as any} size={34} color={isSelected ? COLORS.primary : COLORS.gray} />
               <Text style={[styles.scaleText, isSelected && styles.scaleTextSelected]}>{s.text}</Text>
             </TouchableOpacity>
           );
@@ -141,55 +124,59 @@ export default function EmotionalCommunicationQuiz() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
-          <Text style={styles.formInstruction}>Answer the following questions carefully.</Text>
-
-          {/* Q1 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>1. When I'm upset, I tend to:</Text>
-            {renderGridOptions([
-              { id: 'quiet', text: 'Stay quiet and think', icon: 'moon-outline' },
-              { id: 'talk', text: 'Talk things through right away', icon: 'chatbubbles-outline' },
-              { id: 'distract', text: 'Distract myself until I feel calmer', icon: 'game-controller-outline' },
-              { id: 'wait', text: 'Wait for the other person to reach out first', icon: 'time-outline' },
-            ], answers.q1, 'q1')}
+          <View style={styles.pillWrap}>
+            <View style={styles.pill}><Text style={styles.pillText}>QUESTION {step} OF 5</Text></View>
           </View>
 
-          {/* Q2 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>2. When you care about someone, you usually show it through...</Text>
-            {renderGridOptions([
-              { id: 'time', text: 'Spending quality time together', icon: 'people-outline' },
-              { id: 'gifts', text: 'Giving thoughtful gifts', icon: 'gift-outline' },
-              { id: 'checking', text: 'Checking in and making sure they are okay', icon: 'heart-outline' },
-              { id: 'support', text: 'Doing things to help or support them', icon: 'construct-outline' },
-            ], answers.q2, 'q2')}
-          </View>
+          {step === 1 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>When I'm upset, I tend to:</Text>
+              {renderGridOptions([
+                { id: 'quiet', text: 'Stay quiet and think', icon: 'moon-outline' },
+                { id: 'talk', text: 'Talk things through right away', icon: 'chatbubbles-outline' },
+                { id: 'distract', text: 'Distract myself until I feel calmer', icon: 'game-controller-outline' },
+                { id: 'wait', text: 'Wait for the other person to reach out first', icon: 'time-outline' },
+              ], answers.q1, 'q1')}
+              {renderNextArrow(!answers.q1)}
+            </View>
+          )}
 
-          {/* Q3 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>3. I pick up on changes in someone's mood quickly.</Text>
-            {renderScaleOptions(answers.q3, 'q3')}
-          </View>
+          {step === 2 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>When you care about someone, you usually show it through...</Text>
+              {renderGridOptions([
+                { id: 'time', text: 'Spending quality time together', icon: 'people-outline' },
+                { id: 'gifts', text: 'Giving thoughtful gifts', icon: 'gift-outline' },
+                { id: 'checking', text: 'Checking in and making sure they are okay', icon: 'heart-outline' },
+                { id: 'support', text: 'Doing things to help or support them', icon: 'construct-outline' },
+              ], answers.q2, 'q2')}
+              {renderNextArrow(!answers.q2)}
+            </View>
+          )}
 
-          {/* Q4 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>4. I can express how I feel even when it might cause disagreement.</Text>
-            {renderScaleOptions(answers.q4, 'q4')}
-          </View>
+          {step === 3 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>I pick up on changes in someone's mood quickly.</Text>
+              {renderScaleOptions(answers.q3, 'q3')}
+              {renderNextArrow(!answers.q3)}
+            </View>
+          )}
 
-          {/* Q5 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>5. When my partner withdraws during a disagreement, I usually want to reach out and reconnect.</Text>
-            {renderScaleOptions(answers.q5, 'q5')}
-          </View>
+          {step === 4 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>I can express how I feel even when it might cause disagreement.</Text>
+              {renderScaleOptions(answers.q4, 'q4')}
+              {renderNextArrow(!answers.q4)}
+            </View>
+          )}
 
-          <TouchableOpacity 
-             style={styles.submitBtn} 
-             onPress={handleSubmit}
-             disabled={loading}
-          >
-             <Text style={styles.submitBtnText}>{loading ? "Saving..." : "Save & Continue"}</Text>
-          </TouchableOpacity>
+          {step === 5 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>When my partner withdraws during a disagreement, I usually want to reach out and reconnect.</Text>
+              {renderScaleOptions(answers.q5, 'q5')}
+              {renderNextArrow(!answers.q5)}
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -219,21 +206,4 @@ const styles = StyleSheet.create({
   scaleTextSelected: { color: COLORS.primary, fontWeight: '600' },
   arrowContainer: { alignItems: 'center', marginTop: SPACING.xxl },
   roundArrowBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primaryDark, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  submitBtn: {
-    backgroundColor: '#472B52',
-    paddingVertical: 18,
-    borderRadius: BORDER_RADIUS.xl,
-    alignItems: 'center',
-    marginVertical: SPACING.xl,
-  },
-  submitBtnText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.white,
-    fontSize: 16,
-  },
-  formInstruction: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
-  }
 });

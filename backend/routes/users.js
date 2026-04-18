@@ -30,6 +30,7 @@ const userSchema = new mongoose.Schema({
   onboardingCompleted: { type: Boolean, default: false },
   notificationsEnabled: { type: Boolean, default: false },
   vibeCompleted: { type: Boolean, default: false },
+  vibeSelections: { type: [String], default: [] },
   compatibilityQuiz: { type: Object, default: {} },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
@@ -105,7 +106,7 @@ router.get('/users/:phoneNumber', async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
     
-    res.json(user);
+    res.json({ success: true, user });
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch user profile', error: error.message });
@@ -124,8 +125,14 @@ router.patch('/users/profile', async (req, res) => {
     }
     
     if (data.compatibilityQuiz) {
+      // Convert Mongoose object to plain JS for proper spread
+      const existingQuiz = user.compatibilityQuiz 
+        ? (typeof user.compatibilityQuiz.toObject === 'function' 
+            ? user.compatibilityQuiz.toObject() 
+            : { ...user.compatibilityQuiz })
+        : {};
       user.compatibilityQuiz = { 
-        ...(user.compatibilityQuiz || {}), 
+        ...existingQuiz, 
         ...data.compatibilityQuiz 
       };
       user.markModified('compatibilityQuiz');

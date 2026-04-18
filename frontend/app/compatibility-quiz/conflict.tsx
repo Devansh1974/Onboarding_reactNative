@@ -8,10 +8,10 @@ import { useOnboarding } from '../../src/context/OnboardingContext';
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 interface Answers {
-  q1?: number; // scale
-  q2?: string; // grid
-  q3?: number; // scale
-  q4?: number; // scale
+  q1?: number;
+  q2?: string;
+  q3?: number;
+  q4?: number;
 }
 
 export default function ConflictQuiz() {
@@ -21,10 +21,6 @@ export default function ConflictQuiz() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!answers.q1 || !answers.q2 || !answers.q3 || !answers.q4) {
-      Alert.alert('Incomplete', 'Please answer all questions before proceeding.');
-      return;
-    }
     setLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
@@ -32,16 +28,12 @@ export default function ConflictQuiz() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: data.phoneNumber,
-          data: {
-            compatibilityQuiz: {
-              conflictAndRepair: answers
-            }
-          }
+          data: { compatibilityQuiz: { conflictAndRepair: answers } }
         }),
       });
       const result = await response.json();
       if (result.success) {
-        router.replace('/compatibility-quiz/growth' as any);
+        router.replace('/compatibility-quiz' as any);
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
@@ -53,17 +45,12 @@ export default function ConflictQuiz() {
     }
   };
 
-  const prevStep = () => {
-    router.back();
-  };
+  const nextStep = () => { if (step < 4) setStep(step + 1); else handleSubmit(); };
+  const prevStep = () => { if (step > 1) setStep(step - 1); else router.back(); };
 
   const renderNextArrow = (disabled = false) => (
     <View style={styles.arrowContainer}>
-      <TouchableOpacity 
-        style={[styles.roundArrowBtn, disabled && { opacity: 0.5 }]} 
-        onPress={nextStep}
-        disabled={disabled || loading}
-      >
+      <TouchableOpacity style={[styles.roundArrowBtn, disabled && { opacity: 0.5 }]} onPress={nextStep} disabled={disabled || loading}>
         <Ionicons name="arrow-forward" size={24} color={COLORS.white} />
       </TouchableOpacity>
     </View>
@@ -74,23 +61,13 @@ export default function ConflictQuiz() {
       {options.map((opt) => {
         const isSelected = currentVal === opt.id;
         return (
-          <TouchableOpacity 
-            key={opt.id} 
-            style={[styles.gridCard, isSelected && styles.gridCardSelected]}
-            onPress={() => setAnswers(prev => ({...prev, [field]: opt.id}))}
-            activeOpacity={0.8}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.gridCardText}>{opt.text}</Text>
-            </View>
+          <TouchableOpacity key={opt.id} style={[styles.gridCard, isSelected && styles.gridCardSelected]}
+            onPress={() => setAnswers(prev => ({...prev, [field]: opt.id}))} activeOpacity={0.8}>
+            <View style={{ flex: 1 }}><Text style={styles.gridCardText}>{opt.text}</Text></View>
             <View style={[styles.gridIconWrap, isSelected && { backgroundColor: COLORS.primary }]}>
               <Ionicons name={opt.icon} size={38} color={isSelected ? COLORS.white : COLORS.primary} />
             </View>
-            {isSelected && (
-              <View style={styles.checkBadge}>
-                <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
-              </View>
-            )}
+            {isSelected && (<View style={styles.checkBadge}><Ionicons name="checkmark-circle" size={24} color={COLORS.primary} /></View>)}
           </TouchableOpacity>
         );
       })}
@@ -105,17 +82,12 @@ export default function ConflictQuiz() {
       { id: 2, text: 'Okay-okay', icon: 'sad-outline' },
       { id: 1, text: 'Strongly disagree', icon: 'sad' },
     ] as const;
-
     return (
       <View style={styles.scaleContainer}>
         {scales.map((s) => {
           const isSelected = currentVal === s.id;
           return (
-            <TouchableOpacity 
-              key={s.id} 
-              style={styles.scaleRow}
-              onPress={() => setAnswers(prev => ({...prev, [field]: s.id}))}
-            >
+            <TouchableOpacity key={s.id} style={styles.scaleRow} onPress={() => setAnswers(prev => ({...prev, [field]: s.id}))}>
               <Ionicons name={s.icon as any} size={34} color={isSelected ? COLORS.primary : COLORS.gray} />
               <Text style={[styles.scaleText, isSelected && styles.scaleTextSelected]}>{s.text}</Text>
             </TouchableOpacity>
@@ -136,44 +108,46 @@ export default function ConflictQuiz() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
-          <Text style={styles.formInstruction}>Answer the following questions carefully.</Text>
-
-          {/* Q1 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>1. After a disagreement, I'm usually the one to take the first step toward making things right.</Text>
-            {renderScaleOptions(answers.q1, 'q1')}
+          <View style={styles.pillWrap}>
+            <View style={styles.pill}><Text style={styles.pillText}>QUESTION {step} OF 4</Text></View>
           </View>
 
-          {/* Q2 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>2. When conflict arises, I tend to:</Text>
-            {renderGridOptions([
-              { id: 'avoid', text: 'Avoid it until things calm down', icon: 'walk-outline' },
-              { id: 'address', text: 'Address it right away', icon: 'chatbubbles-outline' },
-              { id: 'compromise', text: 'Compromise quickly to move on', icon: 'handshake-outline' },
-              { id: 'reflect', text: 'Reflect before bringing it up', icon: 'bulb-outline' },
-            ], answers.q2, 'q2')}
-          </View>
+          {step === 1 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>After a disagreement, I'm usually the one to take the first step toward making things right.</Text>
+              {renderScaleOptions(answers.q1, 'q1')}
+              {renderNextArrow(!answers.q1)}
+            </View>
+          )}
 
-          {/* Q3 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>3. I often focus more on being right than on being understood.</Text>
-            {renderScaleOptions(answers.q3, 'q3')}
-          </View>
+          {step === 2 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>When conflict arises, I tend to:</Text>
+              {renderGridOptions([
+                { id: 'avoid', text: 'Avoid it until things calm down', icon: 'walk-outline' },
+                { id: 'address', text: 'Address it right away', icon: 'chatbubbles-outline' },
+                { id: 'compromise', text: 'Compromise quickly to move on', icon: 'hand-left-outline' },
+                { id: 'reflect', text: 'Reflect before bringing it up', icon: 'bulb-outline' },
+              ], answers.q2, 'q2')}
+              {renderNextArrow(!answers.q2)}
+            </View>
+          )}
 
-          {/* Q4 */}
-          <View style={styles.stepBlock}>
-            <Text style={styles.questionTitle}>4. I find it difficult to stay calm when I feel misunderstood.</Text>
-            {renderScaleOptions(answers.q4, 'q4')}
-          </View>
+          {step === 3 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>I often focus more on being right than on being understood.</Text>
+              {renderScaleOptions(answers.q3, 'q3')}
+              {renderNextArrow(!answers.q3)}
+            </View>
+          )}
 
-          <TouchableOpacity 
-             style={styles.submitBtn} 
-             onPress={handleSubmit}
-             disabled={loading}
-          >
-             <Text style={styles.submitBtnText}>{loading ? "Saving..." : "Save & Continue"}</Text>
-          </TouchableOpacity>
+          {step === 4 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>I find it difficult to stay calm when I feel misunderstood.</Text>
+              {renderScaleOptions(answers.q4, 'q4')}
+              {renderNextArrow(!answers.q4)}
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -203,13 +177,4 @@ const styles = StyleSheet.create({
   scaleTextSelected: { color: COLORS.primary, fontWeight: '600' },
   arrowContainer: { alignItems: 'center', marginTop: SPACING.xxl },
   roundArrowBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primaryDark, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  submitBtn: {
-    backgroundColor: '#472B52',
-    paddingVertical: 18,
-    borderRadius: BORDER_RADIUS.xl,
-    alignItems: 'center',
-    marginVertical: SPACING.xl,
-  },
-  submitBtnText: { ...TYPOGRAPHY.button, color: COLORS.white, fontSize: 16 },
-  formInstruction: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginBottom: SPACING.md }
 });

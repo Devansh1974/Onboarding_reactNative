@@ -393,14 +393,16 @@ export default function HomeScreen() {
             icon={isQuizCompleted ? "checkmark-circle" : "bulb-outline"}
             title="Compatibility Quiz"
             unlocked={isApproved && !isQuizCompleted}
-            subtextOverride={isQuizCompleted ? "Completed" : undefined}
+            completed={isQuizCompleted}
+            subtextOverride={isQuizCompleted ? "✓ Completed" : undefined}
             onPress={() => router.push('/compatibility-quiz' as any)}
           />
           <LockedCard
-            icon="color-palette-outline"
+            icon={curateVibeCompleted ? "checkmark-circle" : "color-palette-outline"}
             title="Curate Your Vibe"
             unlocked={isApproved && !curateVibeCompleted}
-            subtextOverride={curateVibeCompleted ? "Completed" : undefined}
+            completed={curateVibeCompleted}
+            subtextOverride={curateVibeCompleted ? "✓ Completed" : undefined}
             onPress={() => router.push('/curate-vibe' as any)}
           />
         </View>
@@ -430,36 +432,38 @@ const LockedCard = ({
   icon,
   title,
   unlocked,
+  completed,
   subtextOverride,
   onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   unlocked: boolean;
+  completed?: boolean;
   subtextOverride?: string;
   onPress: () => void;
 }) => (
   <TouchableOpacity
-    style={[styles.lockedCard, unlocked && styles.lockedCardActive]}
+    style={[styles.lockedCard, unlocked && styles.lockedCardActive, completed && styles.lockedCardCompleted]}
     activeOpacity={unlocked ? 0.85 : 1}
     onPress={unlocked ? onPress : undefined}
     disabled={!unlocked}
   >
     <View style={styles.lockIconWrap}>
       <Ionicons
-        name={unlocked ? 'sparkles' : 'lock-closed'}
+        name={completed ? 'checkmark-circle' : unlocked ? 'sparkles' : 'lock-closed'}
         size={16}
-        color={unlocked ? COLORS.primary : COLORS.textSecondary}
+        color={completed ? '#16a34a' : unlocked ? COLORS.primary : COLORS.textSecondary}
       />
     </View>
     <Ionicons
       name={icon}
       size={28}
-      color={unlocked ? COLORS.primary : COLORS.textSecondary}
+      color={completed ? '#16a34a' : unlocked ? COLORS.primary : COLORS.textSecondary}
       style={{ marginTop: SPACING.md }}
     />
-    <Text style={[styles.lockedTitle, !unlocked && { color: COLORS.textSecondary }]}>{title}</Text>
-    <Text style={styles.lockedSub}>
+    <Text style={[styles.lockedTitle, completed ? { color: '#16a34a' } : !unlocked && { color: COLORS.textSecondary }]}>{title}</Text>
+    <Text style={[styles.lockedSub, completed && { color: '#16a34a' }]}>
       {subtextOverride || (unlocked ? 'Tap to start' : 'Unlocks after Session')}
     </Text>
   </TouchableOpacity>
@@ -647,6 +651,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 2,
+  },
+  lockedCardCompleted: {
+    backgroundColor: '#f0fdf4',
+    opacity: 1,
+    borderWidth: 1.5,
+    borderColor: '#bbf7d0',
   },
   lockIconWrap: {
     position: 'absolute',

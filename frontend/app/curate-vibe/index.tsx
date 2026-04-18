@@ -78,7 +78,10 @@ export default function CurateVibe() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: data.phoneNumber,
-          data: { vibeCompleted: true }
+          data: { 
+            vibeCompleted: true,
+            vibeSelections: selections.filter(Boolean),
+          }
         }),
       });
       router.navigate('/home');
@@ -199,36 +202,27 @@ export default function CurateVibe() {
           <Text style={styles.headerTitleNeutral}>Curate Your Vibe</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-           <View style={styles.resultsCenter}>
-             <Text style={styles.resultsTitle}>Your Vibe ✨</Text>
-             <Text style={styles.resultsSub}>Based on your picks, here's the facial type you're most drawn to</Text>
+        <View style={[styles.content, { justifyContent: 'space-between' }]}>
+           <View>
+             <View style={styles.resultsCenter}>
+               <Text style={styles.resultsTitle}>Your Vibe ✨</Text>
+               <Text style={styles.resultsSub}>Based on your picks, here's the facial type you're most drawn to</Text>
+             </View>
+             
+             <View style={styles.picGrid}>
+               {selections.map((imgUrl, i) => (
+                  <View key={i} style={styles.picBox}>
+                    <Image source={{ uri: imgUrl! }} style={styles.picImage} />
+                  </View>
+               ))}
+             </View>
            </View>
-           
-           <View style={styles.picGrid}>
-             {selections.map((imgUrl, i) => (
-                <View key={i} style={styles.picBox}>
-                  <Image source={{ uri: imgUrl! }} style={styles.picImage} />
-                </View>
-             ))}
-           </View>
-
-           <View style={styles.summaryBox}>
-              <Text style={styles.summaryBoxSub}>YOUR PREFERENCE SUMMARY</Text>
-              <Text style={styles.summaryBoxText}>
-                You seem drawn to faces that are warm, expressive, and have soft defined features.
-              </Text>
-           </View>
-
-           <TouchableOpacity style={styles.redoLink} onPress={() => setStep(1)}>
-             <Text style={styles.redoLinkText}>Not happy with your picks? <Text style={{fontWeight: 'bold'}}>Redo this</Text></Text>
-           </TouchableOpacity>
 
            <TouchableOpacity style={styles.primaryButton} onPress={nextStep}>
               <Text style={styles.primaryButtonText}>Looks Good</Text>
               <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
            </TouchableOpacity>
-        </ScrollView>
+        </View>
       </SafeAreaView>
     );
   }
