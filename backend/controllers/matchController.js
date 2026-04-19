@@ -57,8 +57,12 @@ async function getMatches(req, res) {
     }
 
     // 4. Fetch opposite-gender candidates with completed quizzes
+    const rejectedIds = currentUser.rejects || [];
+    const favoritesIds = currentUser.favorites || [];
+
     const candidates = await User.find({
       phoneNumber: { $ne: phoneNumber },
+      userId: { $nin: [...rejectedIds, ...favoritesIds] },
       gender: { $regex: new RegExp(`^${targetGender}$`, 'i') },
       'compatibilityQuiz.lifestyleAndValues': { $exists: true, $ne: null },
       'compatibilityQuiz.emotionalCommunication': { $exists: true, $ne: null },

@@ -36,7 +36,7 @@ export default function ProfileScreen() {
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Settings</Text>
-        <TouchableOpacity style={styles.moreBtn} onPress={() => router.push('/notifications' as any)}>
+        <TouchableOpacity style={styles.moreBtn} onPress={() => router.push('/inbox' as any)}>
           <Ionicons name="notifications-outline" size={24} color={COLORS.primaryDark} />
         </TouchableOpacity>
       </View>

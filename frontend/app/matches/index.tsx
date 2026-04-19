@@ -59,7 +59,7 @@ export default function MatchFeedScreen() {
   const fetchMatches = async () => {
     try {
       if (!data.phoneNumber) return;
-      const res = await fetch(`${BACKEND_URL}/api/users/${data.phoneNumber}/matches`);
+      const res = await fetch(`${BACKEND_URL}/api/matches/${data.phoneNumber}`);
       const body = await res.json();
       if (body.success) {
         setMatches(body.matches || []);
@@ -90,6 +90,19 @@ export default function MatchFeedScreen() {
     } catch (e) {
       console.error(e);
       Alert.alert('Error', 'Could not communicate with server');
+    }
+  };
+
+  const handleReject = async (matchId: string) => {
+    scrollToNext();
+    try {
+      await fetch(`${BACKEND_URL}/api/users/rejects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: data.phoneNumber, targetUserId: matchId })
+      });
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -230,7 +243,7 @@ export default function MatchFeedScreen() {
 
                 {/* Actions */}
                 <View style={styles.actionsRow}>
-                  <TouchableOpacity style={styles.actionBtn} onPress={scrollToNext}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => handleReject(match.userId)}>
                     <View style={styles.actionCircle}>
                       <Ionicons name="close" size={28} color={COLORS.textSecondary} />
                     </View>
@@ -283,12 +296,12 @@ export default function MatchFeedScreen() {
 
 const Header = () => (
   <View style={styles.header}>
-    <Image source={require('../../assets/images/logo_lightBg.png')} style={styles.logoImage} />
+    <Text style={styles.logo}>lll</Text>
     <View style={styles.headerIcons}>
       <TouchableOpacity style={styles.headerIconBtn} onPress={() => router.push('/matches/favorites' as any)}>
         <Ionicons name="heart" size={24} color={COLORS.primary} />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.headerIconBtn} onPress={() => router.push('/notifications' as any)}>
+      <TouchableOpacity style={styles.headerIconBtn} onPress={() => router.push('/inbox' as any)}>
         <Ionicons name="notifications-outline" size={24} color={COLORS.primaryDark} />
       </TouchableOpacity>
     </View>

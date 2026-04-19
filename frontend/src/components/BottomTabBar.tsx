@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
 import { router, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -49,8 +49,7 @@ export default function BottomTabBar() {
         <TouchableOpacity
           style={styles.centerBtn}
           onPress={() => {
-            // Only allow matches if quiz & vibe are complete
-            if (data.vibeCompleted && data.compatibilityQuiz?.growthAndReadiness) {
+            if (data.onboardingCompleted || (data.vibeCompleted && data.compatibilityQuiz?.growthAndReadiness)) {
                navigateTo('/matches');
             } else {
                Alert.alert(

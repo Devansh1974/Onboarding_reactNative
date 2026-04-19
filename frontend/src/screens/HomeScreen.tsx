@@ -11,7 +11,7 @@ const { width } = Dimensions.get('window');
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 export default function HomeScreen() {
-  const { data } = useOnboarding();
+  const { data, updateData } = useOnboarding();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -28,13 +28,15 @@ export default function HomeScreen() {
       
       const [uRes, sRes] = await Promise.all([
         fetch(`${BACKEND_URL}/api/users/${data.phoneNumber}`),
-        fetch(`${BACKEND_URL}/api/sessions/${data.phoneNumber}`)
+        fetch(`${BACKEND_URL}/api/sessions/user/${data.phoneNumber}`)
       ]);
       const uData = await uRes.json();
       const sData = await sRes.json();
 
       if (uData.success && uData.user) {
         setUserProfile(uData.user);
+        // Sync context locally so Footer instantly knows
+        updateData(uData.user);
       }
       if (sData.success && sData.session) {
         setSession(sData.session);
@@ -99,7 +101,7 @@ export default function HomeScreen() {
           <Text style={styles.logo}>lll</Text>
           <View style={styles.topIcons}>
             <TouchableOpacity style={styles.iconBtn}><Ionicons name="heart-outline" size={24} color={COLORS.primaryDark} /></TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/notifications' as any)}>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/inbox' as any)}>
               <Ionicons name="notifications-outline" size={24} color={COLORS.primaryDark} />
             </TouchableOpacity>
           </View>
@@ -144,7 +146,7 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/matches/favorites' as any)}>
             <Ionicons name="heart-outline" size={24} color={COLORS.primaryDark} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/notifications' as any)}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/inbox' as any)}>
             <Ionicons name="notifications-outline" size={24} color={COLORS.primaryDark} />
           </TouchableOpacity>
         </View>
@@ -170,17 +172,17 @@ export default function HomeScreen() {
           <View style={styles.matchesReadyContainer}>
             <Text style={styles.sectionLabelDashboard}>YOUR DASHBOARD</Text>
             <View style={styles.dashboardGrid}>
-              <View style={styles.dashboardMiniCard}>
+              <View style={[styles.dashboardMiniCard, { paddingHorizontal: 4 }]}>
                 <Text style={styles.dashboardLabel}>Profile</Text>
-                <Text style={styles.dashboardVal}>100%</Text>
+                <Text style={styles.dashboardVal} numberOfLines={1} adjustsFontSizeToFit>100%</Text>
               </View>
-              <View style={styles.dashboardMiniCard}>
+              <View style={[styles.dashboardMiniCard, { paddingHorizontal: 4 }]}>
                 <Text style={styles.dashboardLabel}>Quiz</Text>
-                <Text style={styles.dashboardVal}>100%</Text>
+                <Text style={styles.dashboardVal} numberOfLines={1} adjustsFontSizeToFit>100%</Text>
               </View>
-              <View style={styles.dashboardMiniCard}>
+              <View style={[styles.dashboardMiniCard, { paddingHorizontal: 4 }]}>
                 <Text style={styles.dashboardLabel}>Vibe</Text>
-                <Text style={styles.dashboardVal}>100%</Text>
+                <Text style={styles.dashboardVal} numberOfLines={1} adjustsFontSizeToFit>100%</Text>
               </View>
             </View>
 
@@ -204,24 +206,24 @@ export default function HomeScreen() {
             {/* Timeline Progress Graph */}
             <View style={styles.progressGraphRow}>
               <View style={styles.graphNodeWrapper}>
-                <View style={[styles.graphNode, (!isStep1Active) && {backgroundColor: COLORS.primaryDark}]}>
-                  <Ionicons name={isStep1Active ? "person" : "person"} size={16} color={!isStep1Active ? COLORS.white : COLORS.white} />
+                <View style={[styles.graphNode, {backgroundColor: COLORS.primaryDark}]}>
+                  <Ionicons name="person" size={16} color={COLORS.white} />
                 </View>
                 <Text style={styles.graphNodeLabel}>KNOW YOURSELF</Text>
               </View>
               <View style={styles.graphLine}><View style={[styles.graphLineFill, {width: !isStep1Active ? '100%' : '0%'}]} /></View>
               <View style={styles.graphNodeWrapper}>
-                 <View style={[styles.graphNode, (!isStep1Active && !isStep2Active) ? {backgroundColor: COLORS.primaryDark} : (isStep2Active ? {backgroundColor: COLORS.primaryDark} : {backgroundColor: COLORS.placeholder})]}>
-                  <Ionicons name="people" size={16} color={(!isStep1Active) ? COLORS.white : COLORS.lightGray} />
+                 <View style={[styles.graphNode, (!isStep1Active) ? {backgroundColor: COLORS.primaryDark} : {backgroundColor: COLORS.placeholder}]}>
+                  <Ionicons name="people" size={16} color={COLORS.white} />
                 </View>
-                <Text style={[styles.graphNodeLabel, isStep1Active && {color: COLORS.lightGray}]}>COMPATIBILITY</Text>
+                <Text style={[styles.graphNodeLabel, isStep1Active && {color: COLORS.placeholder}]}>COMPATIBILITY</Text>
               </View>
               <View style={styles.graphLine}><View style={[styles.graphLineFill, {width: (!isStep1Active && !isStep2Active) ? '100%' : '0%'}]} /></View>
               <View style={styles.graphNodeWrapper}>
-                <View style={[styles.graphNode, isStep3Active ? {backgroundColor: COLORS.primaryDark} : {backgroundColor: COLORS.placeholder}]}>
-                  <Ionicons name="sparkles" size={16} color={isStep3Active ? COLORS.white : COLORS.lightGray} />
+                <View style={[styles.graphNode, (!isStep1Active && !isStep2Active) ? {backgroundColor: COLORS.primaryDark} : {backgroundColor: COLORS.placeholder}]}>
+                  <Ionicons name="sparkles" size={16} color={COLORS.white} />
                 </View>
-                <Text style={[styles.graphNodeLabel, (isStep1Active || isStep2Active) && {color: COLORS.lightGray}]}>VIBE</Text>
+                <Text style={[styles.graphNodeLabel, (isStep1Active || isStep2Active) && {color: COLORS.placeholder}]}>VIBE</Text>
               </View>
             </View>
 
@@ -375,7 +377,7 @@ export default function HomeScreen() {
                 <Text style={styles.activeTitle}>Curate Your Vibe</Text>
                 <Text style={styles.activeBody}>Select the faces you naturally feel drawn to. This helps us understand your attraction patterns and personalise your matches.</Text>
                 
-                <TouchableOpacity style={[styles.activePrimaryBtn, { marginTop: SPACING.xl }]} onPress={() => Alert.alert("Coming Soon", "Vibe curating interface opens...")}>
+                <TouchableOpacity style={[styles.activePrimaryBtn, { marginTop: SPACING.xl }]} onPress={() => router.push('/curate-vibe' as any)}>
                   <Text style={styles.activePrimaryBtnText}>Start Selection →</Text>
                 </TouchableOpacity>
               </View>
@@ -441,17 +443,17 @@ const styles = StyleSheet.create({
   missedBannerText: { color: '#DC2626', fontWeight: '500' },
 
   // Active Card (Purple)
-  activeCard: { backgroundColor: COLORS.primaryDark, borderRadius: 24, padding: SPACING.xl, overflow: 'hidden' },
+  activeCard: { backgroundColor: COLORS.primaryDark, borderRadius: 24, padding: SPACING.xl },
   activePill: { alignSelf: 'flex-start', backgroundColor: COLORS.white, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: SPACING.md },
   activePillText: { fontSize: 10, fontWeight: '700', color: COLORS.primaryDark, letterSpacing: 1 },
-  activedBigNumber: { position: 'absolute', top: 20, right: 20, fontSize: 64, fontWeight: '800', color: 'rgba(255,255,255,0.1)' },
+  activedBigNumber: { position: 'absolute', top: 20, right: 20, fontSize: 64, fontWeight: '800', color: COLORS.white, opacity: 0.1 },
   activeTitle: { ...TYPOGRAPHY.h2, color: COLORS.white, marginBottom: SPACING.sm },
-  activeBody: { ...TYPOGRAPHY.body, color: 'rgba(255,255,255,0.8)', lineHeight: 22, marginBottom: SPACING.lg },
+  activeBody: { ...TYPOGRAPHY.body, color: COLORS.lightGray, lineHeight: 22, marginBottom: SPACING.lg },
   activePrimaryBtn: { backgroundColor: COLORS.white, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
   activePrimaryBtnText: { ...TYPOGRAPHY.bodyBold, color: COLORS.primaryDark },
-  activeTakesText: { textAlign: 'center', fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.6)', marginTop: SPACING.md, letterSpacing: 1 },
+  activeTakesText: { textAlign: 'center', fontSize: 10, fontWeight: '700', color: COLORS.lightGray, marginTop: SPACING.md, letterSpacing: 1 },
   benefitsList: { marginTop: SPACING.lg },
-  benefitItem: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginBottom: 4 },
+  benefitItem: { color: COLORS.lightGray, fontSize: 13, marginBottom: 4 },
 
   sessionBox: { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 16, padding: SPACING.lg, marginBottom: SPACING.lg },
   sessionBoxIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.sm },
@@ -476,7 +478,7 @@ const styles = StyleSheet.create({
   reviewDisclaimerText: { fontSize: 12, color: COLORS.primaryDark, marginLeft: 6, fontWeight: '500' },
 
   progressTextRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  progressQs: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.8)', letterSpacing: 1 },
+  progressQs: { fontSize: 10, fontWeight: '700', color: COLORS.lightGray, letterSpacing: 1 },
   progressPct: { fontSize: 12, fontWeight: '700', color: COLORS.white },
   progressBarTrack: { height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3 },
   progressBarFill: { height: '100%', backgroundColor: COLORS.white, borderRadius: 3 },
@@ -494,11 +496,11 @@ const styles = StyleSheet.create({
   successBanner: { flexDirection: 'row', backgroundColor: '#DCFCE7', padding: SPACING.md, borderRadius: BORDER_RADIUS.md, alignItems: 'center', marginBottom: SPACING.xl },
   successBannerText: { ...TYPOGRAPHY.bodyBold, color: '#166534', marginLeft: 8 },
   matchesReadyContainer: { marginTop: SPACING.sm },
-  sectionLabelDashboard: { ...TYPOGRAPHY.caption, fontWeight: '700', color: COLORS.lightGray, letterSpacing: 1, marginBottom: SPACING.sm },
+  sectionLabelDashboard: { ...TYPOGRAPHY.caption, fontWeight: '700', color: '#6B7280', letterSpacing: 1, marginBottom: SPACING.sm },
   dashboardGrid: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xl },
-  dashboardMiniCard: { flex: 1, backgroundColor: COLORS.white, padding: SPACING.md, borderRadius: BORDER_RADIUS.md, alignItems: 'center' },
+  dashboardMiniCard: { flex: 1, backgroundColor: COLORS.white, paddingVertical: SPACING.md, borderRadius: BORDER_RADIUS.md, alignItems: 'center' },
   dashboardLabel: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginBottom: 4 },
-  dashboardVal: { ...TYPOGRAPHY.bodyBold, color: COLORS.primaryDark },
+  dashboardVal: { fontSize: 18, fontWeight: '700', color: COLORS.primaryDark },
   matchesHeroCard: { backgroundColor: COLORS.primaryDark, borderRadius: BORDER_RADIUS.lg, padding: SPACING.xl, alignItems: 'center' },
   readyPill: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: SPACING.md },
   readyPillText: { fontSize: 10, fontWeight: '700', color: COLORS.white, letterSpacing: 1 },

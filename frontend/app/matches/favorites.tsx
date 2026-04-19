@@ -19,6 +19,10 @@ export default function FavoritesScreen() {
 
   const fetchFavorites = async () => {
     try {
+      if (!data?.phoneNumber) {
+        setLoading(false);
+        return;
+      }
       const res = await fetch(`${BACKEND_URL}/api/users/${data.phoneNumber}/favorites`);
       const resData = await res.json();
       if (resData.success) {
@@ -28,6 +32,20 @@ export default function FavoritesScreen() {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUnfavorite = async (targetId: string) => {
+    // Optimistic UI update
+    setFavorites(favorites.filter(x => x._id !== targetId));
+    try {
+      await fetch(`${BACKEND_URL}/api/users/favorites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: data.phoneNumber, targetUserId: targetId })
+      });
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -89,9 +107,13 @@ export default function FavoritesScreen() {
                   )}
                 </View>
                 
-                <View style={styles.heartBtn}>
-                  <Ionicons name="heart" size={24} color={COLORS.primary} />
-                </View>
+                <TouchableOpacity 
+                  style={styles.heartBtn}
+                  onPress={() => handleUnfavorite(fav._id)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={24} color="#EF4444" />
+                </TouchableOpacity>
               </TouchableOpacity>
             );
           })}

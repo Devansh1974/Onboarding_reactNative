@@ -115,7 +115,7 @@ export default function EditProfileScreen() {
           <Ionicons name="arrow-back" size={24} color={COLORS.primaryDark} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
-        <TouchableOpacity style={styles.headerBtn} onPress={() => router.push('/notifications' as any)}>
+        <TouchableOpacity style={styles.headerBtn} onPress={() => router.push('/inbox' as any)}>
           <Ionicons name="notifications-outline" size={24} color={COLORS.primaryDark} />
         </TouchableOpacity>
       </View>
