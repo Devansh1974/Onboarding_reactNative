@@ -14,8 +14,9 @@ export default function PhoneScreen() {
   const [error, setError] = useState('');
 
   const handleContinue = () => {
-    if (!phoneNumber || phoneNumber.length < 10) {
-      setError('Please enter a valid phone number');
+    const cleanNumber = phoneNumber.replace(/[^0-9]/g, '');
+    if (!cleanNumber || cleanNumber.length !== 10) {
+      setError('Please enter a valid 10-digit phone number');
       return;
     }
 

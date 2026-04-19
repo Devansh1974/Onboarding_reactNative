@@ -10,9 +10,26 @@ import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 export default function BirthdayScreen() {
   const { updateData } = useOnboarding();
   const [birthday, setBirthday] = useState('');
+  const [error, setError] = useState('');
 
   const handleContinue = () => {
     if (!birthday) return;
+    
+    // Age validation
+    const birthDate = new Date(birthday);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    if (age < 18) {
+      setError('You must be at least 18 years old to use WingMann.');
+      return;
+    }
+
+    setError('');
     updateData({ birthday });
     router.push('/height');
   };
@@ -31,7 +48,8 @@ export default function BirthdayScreen() {
           <Text style={styles.subtitle}>It like acknowledging the day that mother nature gave you life</Text>
           
           <View style={styles.inputContainer}>
-            <DatePicker value={birthday} onChange={setBirthday} />
+            <DatePicker value={birthday} onChange={(val) => { setBirthday(val); setError(''); }} />
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </View>
         </View>
 
@@ -53,4 +71,5 @@ const styles = StyleSheet.create({
   title: { ...TYPOGRAPHY.h2, color: COLORS.text, marginBottom: SPACING.sm },
   subtitle: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, marginBottom: SPACING.xl },
   inputContainer: { marginTop: SPACING.lg },
+  errorText: { ...TYPOGRAPHY.caption, color: COLORS.error, marginTop: SPACING.sm, textAlign: 'center' },
 });

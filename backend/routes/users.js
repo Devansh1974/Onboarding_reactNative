@@ -39,6 +39,8 @@ const userSchema = new mongoose.Schema({
   vibeCompleted: { type: Boolean, default: false },
   vibeSelections: { type: [String], default: [] },
   compatibilityQuiz: { type: Object, default: {} },
+  favorites: { type: [String], default: [] },
+  rejects: { type: [String], default: [] },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -117,6 +119,89 @@ router.get('/users/:phoneNumber', async (req, res) => {
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch user profile', error: error.message });
+  }
+});
+
+// Toggle Favorite Profile
+router.post('/users/favorites', async (req, res) => {
+  try {
+    const { phoneNumber, targetUserId } = req.body;
+    
+    if (!phoneNumber || !targetUserId) {
+      return res.status(400).json({ success: false, message: 'Missing fields' });
+    }
+
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.favorites.includes(targetUserId)) {
+      user.favorites = user.favorites.filter(id => id !== targetUserId);
+    } else {
+      user.favorites.push(targetUserId);
+    }
+    
+    await user.save();
+    res.json({ success: true, message: 'Favorites updated', favorites: user.favorites });
+  } catch (error) {
+    console.error('Error toggling favorite:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Add to Rejects
+router.post('/users/rejects', async (req, res) => {
+  try {
+    const { phoneNumber, targetUserId } = req.body;
+    
+    if (!phoneNumber || !targetUserId) {
+      return res.status(400).json({ success: false, message: 'Missing fields' });
+    }
+
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Ensure array exists since schema changes aren't retroactive on old docs without default validation triggers sometimes
+    if (!user.rejects) user.rejects = [];
+    
+    if (!user.rejects.includes(targetUserId)) {
+      user.rejects.push(targetUserId);
+      user.markModified('rejects');
+      await user.save();
+    }
+
+    res.json({ success: true, message: 'Added to rejects' });
+  } catch (error) {
+    console.error('Error rejecting profile:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Get Populated Favorites
+router.get('/users/:phoneNumber/favorites', async (req, res) => {
+  try {
+    const { phoneNumber } = req.params;
+    const user = await User.findOne({ phoneNumber });
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Fallback if favorites don't exist yet
+    if (!user.favorites || user.favorites.length === 0) {
+      return res.json({ success: true, favorites: [] });
+    }
+
+    const favoriteProfiles = await User.find({ userId: { $in: user.favorites } })
+      .select('name location photos height religionFollow age birthday percentage story workDetails gender');
+
+    res.json({ success: true, favorites: favoriteProfiles });
+  } catch (error) {
+    console.error('Error fetching favorites:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 

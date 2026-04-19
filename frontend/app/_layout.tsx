@@ -12,11 +12,12 @@ export default function RootLayout() {
           <Stack
             screenOptions={{
               headerShown: false,
-              animation: 'slide_from_right',
-              animationDuration: 300,
+              animation: 'fade',
+              animationDuration: 200,
             }}
           >
             <Stack.Screen name="index" />
+            <Stack.Screen name="welcome" />
             <Stack.Screen name="otp" />
             <Stack.Screen name="gender" />
             <Stack.Screen name="name" />
@@ -25,6 +26,11 @@ export default function RootLayout() {
             <Stack.Screen name="preferences" />
             <Stack.Screen name="upload-photos" />
             <Stack.Screen name="admin" />
+            <Stack.Screen name="edit-profile" />
+            <Stack.Screen name="legal-safety" />
+            <Stack.Screen name="delete-account" />
+            <Stack.Screen name="notifications" />
+            <Stack.Screen name="inbox" />
           </Stack>
         </AdminProvider>
       </OnboardingProvider>

@@ -33,7 +33,7 @@ export default function ConflictQuiz() {
       });
       const result = await response.json();
       if (result.success) {
-        router.replace('/compatibility-quiz' as any);
+        router.replace('/compatibility-quiz/growth' as any);
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
@@ -103,7 +103,10 @@ export default function ConflictQuiz() {
         <TouchableOpacity style={styles.backButton} onPress={prevStep}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Conflict & Repair Patterns</Text>
+        <Text style={styles.headerTitle}>Conflict & Repair</Text>
+      </View>
+      <View style={{ width: '100%', height: 4, backgroundColor: '#E2E8F0' }}>
+        <View style={{ width: `${Math.round(((16 + step) / 25) * 100)}%`, height: '100%', backgroundColor: COLORS.primary }} />
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
