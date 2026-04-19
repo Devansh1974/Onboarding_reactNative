@@ -4,6 +4,7 @@ import { router, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY } from '../constants/theme';
+import { useOnboarding } from '../context/OnboardingContext';
 
 type TabKey = 'home' | 'dates' | 'requests' | 'profile';
 
@@ -24,8 +25,9 @@ const TABS: TabItem[] = [
 
 export default function BottomTabBar() {
   const pathname = usePathname();
+  const { data } = useOnboarding();
 
-  const isActive = (path: string) => pathname === path;
+  const isActive = (path: string) => pathname === path || (path === '/matches' && pathname.startsWith('/matches'));
 
   const navigateTo = (path: string) => {
     if (isActive(path)) return;
@@ -46,12 +48,19 @@ export default function BottomTabBar() {
         {/* Center floating brand button */}
         <TouchableOpacity
           style={styles.centerBtn}
-          onPress={() => navigateTo('/home')}
+          onPress={() => {
+            // Only allow matches if quiz & vibe are complete
+            if (data.vibeCompleted && data.compatibilityQuiz?.growthAndReadiness) {
+               navigateTo('/matches');
+            } else {
+               navigateTo('/home');
+            }
+          }}
           activeOpacity={0.85}
-          accessibilityLabel="WingMann home"
+          accessibilityLabel="Matches"
         >
-          <View style={styles.centerInner}>
-            <Ionicons name="heart" size={22} color={COLORS.white} />
+          <View style={[styles.centerInner, isActive('/matches') && { backgroundColor: COLORS.white }]}>
+            <Ionicons name="heart" size={26} color={isActive('/matches') ? COLORS.primary : COLORS.white} />
           </View>
         </TouchableOpacity>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingLayout } from '../components/OnboardingLayout';
 import { CustomButton } from '../components/CustomButton';
@@ -7,6 +7,10 @@ import { useOnboarding } from '../context/OnboardingContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../constants/theme';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function SchedulePickTimeScreen() {
   const { data } = useOnboarding();
@@ -25,6 +29,7 @@ export default function SchedulePickTimeScreen() {
 
   useEffect(() => {
     if (selectedDate) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       fetchSlots(selectedDate);
     }
   }, [selectedDate]);

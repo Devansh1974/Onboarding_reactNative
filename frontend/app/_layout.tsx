@@ -17,6 +17,7 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name="index" />
+            <Stack.Screen name="welcome" />
             <Stack.Screen name="otp" />
             <Stack.Screen name="gender" />
             <Stack.Screen name="name" />
@@ -25,6 +26,9 @@ export default function RootLayout() {
             <Stack.Screen name="preferences" />
             <Stack.Screen name="upload-photos" />
             <Stack.Screen name="admin" />
+            <Stack.Screen name="edit-profile" />
+            <Stack.Screen name="legal-safety" />
+            <Stack.Screen name="delete-account" />
           </Stack>
         </AdminProvider>
       </OnboardingProvider>

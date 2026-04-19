@@ -24,10 +24,7 @@ export default function ProfileScreen() {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert('Delete Account', 'This will permanently remove your account. This action cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => Alert.alert('Contact Support', 'Please email support@wingmann.com to delete your account.') },
-    ]);
+    router.push('/delete-account');
   };
 
   const comingSoon = (label: string) => Alert.alert('Coming Soon', `${label} will be available in the next update.`);
@@ -46,7 +43,7 @@ export default function ProfileScreen() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Profile card */}
-        <TouchableOpacity style={styles.profileCard} onPress={() => comingSoon('View profile')} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.profileCard} onPress={() => router.push('/edit-profile')} activeOpacity={0.85}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{(data.name || 'U').charAt(0).toUpperCase()}</Text>
           </View>
@@ -57,7 +54,7 @@ export default function ProfileScreen() {
               <Text style={styles.profileLoc}>{data.location || 'Location'}</Text>
             </View>
           </View>
-          <Text style={styles.viewProfile}>View Profile →</Text>
+          <Text style={styles.viewProfile}>Edit Profile →</Text>
         </TouchableOpacity>
 
         <SectionHeader label="ACCOUNT" />
@@ -83,9 +80,9 @@ export default function ProfileScreen() {
         <SectionHeader label="LEGAL & HELP" />
         <MenuGroup>
           <MenuItem icon="star-outline" label="Share a Feedback" onPress={() => comingSoon('Share Feedback')} />
-          <MenuItem icon="document-text-outline" label="Terms & Conditions" onPress={() => comingSoon('Terms & Conditions')} />
-          <MenuItem icon="shield-checkmark-outline" label="Privacy Policy" onPress={() => comingSoon('Privacy Policy')} />
-          <MenuItem icon="alert-circle-outline" label="Safety Guidelines" onPress={() => comingSoon('Safety Guidelines')} last />
+          <MenuItem icon="document-text-outline" label="Terms & Conditions" onPress={() => router.push('/legal-safety')} />
+          <MenuItem icon="shield-checkmark-outline" label="Privacy Policy" onPress={() => router.push('/legal-safety')} />
+          <MenuItem icon="alert-circle-outline" label="Safety Guidelines" onPress={() => router.push('/legal-safety')} last />
         </MenuGroup>
 
         <View style={styles.dangerGroup}>

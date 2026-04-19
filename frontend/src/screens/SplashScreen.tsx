@@ -1,63 +1,64 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withSequence } from 'react-native-reanimated';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, Dimensions, Text } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { router } from 'expo-router';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
+import { COLORS, TYPOGRAPHY } from '../constants/theme';
+
+const { width, height } = Dimensions.get('window');
 
 export default function SplashScreen() {
-  const scale = useSharedValue(0.3);
-  const opacity = useSharedValue(0);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: scale.value }],
-      opacity: opacity.value,
-    };
-  });
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Animate logo
-    scale.value = withSpring(1, { damping: 10 });
-    opacity.value = withSpring(1);
+    // If video fails to load or user wants a fallback, automatically proceed after 3 seconds
+    const fallbackTimer = setTimeout(() => {
+      finishSplash();
+    }, 4000);
 
-    // Navigate to welcome screen after 2.5 seconds
-    const timer = setTimeout(() => {
-      router.replace('/welcome');
-    }, 2500);
-
-    return () => clearTimeout(timer);
+    return () => clearTimeout(fallbackTimer);
   }, []);
+
+  const finishSplash = () => {
+    if (!isReady) {
+      setIsReady(true);
+      // Navigate to the welcome screen
+      router.replace('/welcome'); 
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.logoContainer, animatedStyle]}>
-        <Text style={styles.logo}>WingMann</Text>
-        <Text style={styles.tagline}>Find Your Match</Text>
-      </Animated.View>
+      {/* 
+        You will need to place your 'logo_animation.mp4' in frontend/assets/ 
+        Uncomment the below Video component after placing the file.
+      */}
+      <View style={styles.videoContainer}>
+        <Text style={styles.placeholderText}>Wingmann</Text>
+        <Text style={styles.subText}>(Video Animation Placeholder)</Text>
+        
+        {/* 
+        <Video
+          source={require('../../assets/logo_animation.mp4')}
+          style={styles.video}
+          resizeMode={ResizeMode.COVER}
+          shouldPlay={true}
+          isLooping={false}
+          onPlaybackStatusUpdate={(status) => {
+            if (status.isLoaded && status.didJustFinish) {
+              finishSplash();
+            }
+          }}
+        />
+        */}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoContainer: {
-    alignItems: 'center',
-  },
-  logo: {
-    ...TYPOGRAPHY.h1,
-    fontSize: 48,
-    fontWeight: '700',
-    color: COLORS.white,
-    marginBottom: SPACING.sm,
-  },
-  tagline: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.white,
-    opacity: 0.8,
-  },
+  container: { flex: 1, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' },
+  videoContainer: { width: width, height: height, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' },
+  video: { width: width, height: height, position: 'absolute' },
+  placeholderText: { ...TYPOGRAPHY.h1, color: COLORS.primaryDark, fontSize: 40, fontStyle: 'italic' },
+  subText: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginTop: 10 }
 });
