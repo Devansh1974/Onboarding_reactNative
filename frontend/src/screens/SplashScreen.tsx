@@ -33,10 +33,7 @@ export default function SplashScreen() {
         Uncomment the below Video component after placing the file.
       */}
       <View style={styles.videoContainer}>
-        <Text style={styles.placeholderText}>Wingmann</Text>
-        <Text style={styles.subText}>(Video Animation Placeholder)</Text>
         
-        {/* 
         <Video
           source={require('../../assets/logo_animation.mp4')}
           style={styles.video}
@@ -49,7 +46,7 @@ export default function SplashScreen() {
             }
           }}
         />
-        */}
+       
       </View>
     </View>
   );
@@ -59,6 +56,4 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' },
   videoContainer: { width: width, height: height, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' },
   video: { width: width, height: height, position: 'absolute' },
-  placeholderText: { ...TYPOGRAPHY.h1, color: COLORS.primaryDark, fontSize: 40, fontStyle: 'italic' },
-  subText: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginTop: 10 }
 });
