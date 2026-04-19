@@ -8,7 +8,7 @@ import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../constants/theme';
 
 const foodOptions = [
   'Non vegetarian',
-  'vegetable',
+  'Vegetarian',
   'Vegan',
 ];
 

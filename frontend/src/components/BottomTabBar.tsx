@@ -53,7 +53,10 @@ export default function BottomTabBar() {
             if (data.vibeCompleted && data.compatibilityQuiz?.growthAndReadiness) {
                navigateTo('/matches');
             } else {
-               navigateTo('/home');
+               Alert.alert(
+                 'Complete Your Profile',
+                 'Please complete your compatibility quiz and curate your vibe to unlock your matches.'
+               );
             }
           }}
           activeOpacity={0.85}

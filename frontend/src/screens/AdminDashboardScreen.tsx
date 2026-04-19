@@ -61,29 +61,6 @@ export default function AdminDashboardScreen() {
   const [reviewNotes, setReviewNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (admin) {
-      loadData();
-      // Setup live polling every 10 seconds
-      const interval = setInterval(() => {
-        loadData(true); // pass true for silent background refresh
-      }, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [admin]);
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#FAF9F8', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={COLORS.primaryDark} />
-      </View>
-    );
-  }
-
-  if (!admin) {
-    return <Redirect href="/admin/login" />;
-  }
-
   const loadData = useCallback(async (isSilent = false) => {
     try {
       if (!isSilent) setLoading(true);
@@ -103,6 +80,17 @@ export default function AdminDashboardScreen() {
       setRefreshing(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (admin) {
+      loadData();
+      // Setup live polling every 10 seconds
+      const interval = setInterval(() => {
+        loadData(true); // pass true for silent background refresh
+      }, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [admin]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -250,6 +238,21 @@ export default function AdminDashboardScreen() {
     if (s.status === 'completed') return 'COMPLETED';
     return s.status.toUpperCase();
   };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading auth…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!admin) {
+    return <Redirect href="/admin/login" />;
+  }
 
   if (loading) {
     return (
