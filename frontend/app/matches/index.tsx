@@ -58,27 +58,38 @@ export default function MatchFeedScreen() {
 
   const fetchMatches = async () => {
     try {
-      setError(null);
-      const response = await fetch(`${BACKEND_URL}/api/matches/${data.phoneNumber}`);
-      const result = await response.json();
-      if (result.success) {
-        let top = (result.matches || []).slice(0, MAX_DAILY);
-        
-        // Pad with null placeholders if there are fewer than 5 matches
-        const padded: (MatchItem | null)[] = [...top];
-        while (padded.length < MAX_DAILY) {
-          padded.push(null);
-        }
-        
-        setMatches(padded);
+      if (!data.phoneNumber) return;
+      const res = await fetch(`${BACKEND_URL}/api/users/${data.phoneNumber}/matches`);
+      const body = await res.json();
+      if (body.success) {
+        setMatches(body.matches || []);
       } else {
-        setError(result.message || 'Failed to load matches');
+        setError(body.message || 'Failed to fetch matches');
       }
     } catch (e) {
       console.error(e);
-      setError('Unable to connect to server');
+      setError('Network error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFavorite = async (matchId: string) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/users/favorites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: data.phoneNumber, targetUserId: matchId })
+      });
+      const body = await res.json();
+      if (body.success) {
+         scrollToNext();
+      } else {
+         Alert.alert('Error', 'Failed to save favorite');
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Could not communicate with server');
     }
   };
 
@@ -164,119 +175,93 @@ export default function MatchFeedScreen() {
           snapToInterval={CARD_WIDTH}
         >
           {matches.map((match, idx) => {
-            // Render Real Match
-            if (match) {
-              const age = getAge(match.birthday);
-              const photos = match.photos || [];
-              const hasPhotos = photos.length > 0;
+            const age = getAge(match.birthday);
+            const photos = match.photos || [];
+            const hasPhotos = photos.length > 0;
 
-              return (
-                <View key={`match-${idx}`} style={styles.slidePage}>
-                  {/* Photo Dots */}
-                  {hasPhotos && photos.length > 1 && (
-                    <View style={styles.dotsRow}>
-                      {photos.map((_, i) => (
-                        <View key={i} style={[styles.dot, i === currentPhotoIndex && styles.dotActive]} />
-                      ))}
-                    </View>
-                  )}
-
-                  <Animated.View style={styles.matchCard}>
-                    <TouchableOpacity activeOpacity={0.95} onPress={() => openProfile(match)} style={{ flex: 1 }}>
-                      <View style={styles.photoWrap}>
-                        {hasPhotos ? (
-                          <Image source={{ uri: photos[currentPhotoIndex] }} style={styles.cardPhoto} />
-                        ) : (
-                          <View style={[styles.cardPhoto, styles.noPhoto]}>
-                            <Ionicons name="person" size={80} color={COLORS.white} />
-                          </View>
-                        )}
-
-                        {/* Photo Nav */}
-                        {hasPhotos && photos.length > 1 && (
-                          <>
-                            <TouchableOpacity style={styles.photoNavLeft} onPress={() => cyclePhoto(match, -1)} />
-                            <TouchableOpacity style={styles.photoNavRight} onPress={() => cyclePhoto(match, 1)} />
-                          </>
-                        )}
-
-                        <View style={styles.compatBadge}>
-                          <Text style={styles.compatBadgeText}>{match.percentage}% Compatible</Text>
-                        </View>
-
-                        <View style={styles.nameOverlay}>
-                          <Text style={styles.nameText}>
-                            {match.name}{age ? `, ${age}` : ''}
-                          </Text>
-                          {match.location ? (
-                            <View style={styles.locationRow}>
-                              <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.8)" />
-                              <Text style={styles.locationText}>{match.location}</Text>
-                            </View>
-                          ) : null}
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  </Animated.View>
-
-                  {/* Actions */}
-                  <View style={styles.actionsRow}>
-                    <TouchableOpacity style={styles.actionBtn} onPress={scrollToNext}>
-                      <View style={styles.actionCircle}>
-                        <Ionicons name="close" size={28} color={COLORS.textSecondary} />
-                      </View>
-                      <Text style={styles.actionLabel}>NOT FOR ME</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionBtn} onPress={scrollToNext}>
-                      <View style={[styles.actionCircle, styles.actionCircleFav]}>
-                        <Ionicons name="heart" size={28} color={COLORS.primary} />
-                      </View>
-                      <Text style={styles.actionLabel}>FAVORITE</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.infoTextWrap}>
-                    <Text style={styles.infoLine}>NOT FOR ME = REFRESHES IN 24H</Text>
-                    <Text style={styles.infoLine}>FAVORITE = STAYS UNTIL UNFAVORED</Text>
-                    <Text style={[styles.infoLine, styles.infoBold]}>
-                      THESE PROFILES WILL REFRESH AT 12:00 NOON IF{'\n'}NO ACTION IS TAKEN.
-                    </Text>
-                  </View>
-                </View>
-              );
-            }
-
-            // Render Empty Placeholder
             return (
-              <View key={`empty-${idx}`} style={styles.slidePage}>
-                <View style={[styles.matchCard, styles.placeholderCard]}>
-                  <Ionicons name="search" size={60} color={COLORS.lightGray} />
-                  <Text style={styles.placeholderTitle}>Looking for Matches</Text>
-                  <Text style={styles.placeholderSub}>
-                    More potential matches will appear here based on your compatibility preferences and activity.
-                  </Text>
+              <View key={`match-${idx}`} style={styles.slidePage}>
+                {/* Photo Dots */}
+                {hasPhotos && photos.length > 1 && (
+                  <View style={styles.dotsRow}>
+                    {photos.map((_, i) => (
+                      <View key={i} style={[styles.dot, i === currentPhotoIndex && styles.dotActive]} />
+                    ))}
+                  </View>
+                )}
+
+                <Animated.View style={styles.matchCard}>
+                  <TouchableOpacity activeOpacity={0.95} onPress={() => openProfile(match)} style={{ flex: 1 }}>
+                    <View style={styles.photoWrap}>
+                      {hasPhotos ? (
+                        <Image source={{ uri: photos[currentPhotoIndex] }} style={styles.cardPhoto} />
+                      ) : (
+                        <View style={[styles.cardPhoto, styles.noPhoto]}>
+                          <Ionicons name="person" size={80} color={COLORS.white} />
+                        </View>
+                      )}
+
+                      {/* Photo Nav */}
+                      {hasPhotos && photos.length > 1 && (
+                        <>
+                          <TouchableOpacity style={styles.photoNavLeft} onPress={() => cyclePhoto(match, -1)} />
+                          <TouchableOpacity style={styles.photoNavRight} onPress={() => cyclePhoto(match, 1)} />
+                        </>
+                      )}
+
+                      <View style={styles.compatBadge}>
+                        <Text style={styles.compatBadgeText}>{match.percentage}% Compatible</Text>
+                      </View>
+
+                      <View style={styles.nameOverlay}>
+                        <Text style={styles.nameText}>
+                          {match.name}{age ? `, ${age}` : ''}
+                        </Text>
+                        {match.location ? (
+                          <View style={styles.locationRow}>
+                            <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.8)" />
+                            <Text style={styles.locationText}>{match.location}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+
+                {/* Actions */}
+                <View style={styles.actionsRow}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={scrollToNext}>
+                    <View style={styles.actionCircle}>
+                      <Ionicons name="close" size={28} color={COLORS.textSecondary} />
+                    </View>
+                    <Text style={styles.actionLabel}>NOT FOR ME</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => handleFavorite(match.userId)}>
+                    <View style={[styles.actionCircle, styles.actionCircleFav]}>
+                      <Ionicons name="heart" size={28} color={COLORS.primary} />
+                    </View>
+                    <Text style={styles.actionLabel}>FAVORITE</Text>
+                  </TouchableOpacity>
                 </View>
-                
-                <TouchableOpacity style={styles.skipBtn} onPress={scrollToNext}>
-                  <Text style={styles.skipBtnText}>Skip Placeholder</Text>
-                </TouchableOpacity>
+
                 <View style={styles.infoTextWrap}>
-                    <Text style={styles.infoLine}>EMPTY SLOT</Text>
-                    <Text style={[styles.infoLine, styles.infoBold]}>
-                      CONTINUE SWIPING TO EXPLORE{'\n'}MORE PROFILES OR CHECK BACK LATER.
-                    </Text>
+                  <Text style={styles.infoLine}>NOT FOR ME = REFRESHES IN 24H</Text>
+                  <Text style={styles.infoLine}>FAVORITE = STAYS UNTIL UNFAVORED</Text>
+                  <Text style={[styles.infoLine, styles.infoBold]}>
+                    THESE PROFILES WILL REFRESH AT 12:00 NOON IF{'\n'}NO ACTION IS TAKEN.
+                  </Text>
                 </View>
               </View>
             );
           })}
 
-          {/* Render Limit / Timer Screen at Index 5 */}
+          {/* Render Limit / Timer Screen */}
           <View style={styles.slidePage}>
             <View style={styles.center}>
               <Text style={{ fontSize: 60, marginBottom: SPACING.lg }}>🌙</Text>
               <Text style={styles.limitTitle}>That's all for today</Text>
               <Text style={styles.limitSubtitle}>
-                You've reviewed your top 5 matches for today.{'\n'}Check back tomorrow for fresh faces!
+                You've reviewed your top matches for today.{'\n'}Check back tomorrow for fresh faces!
               </Text>
 
               <View style={styles.timerCard}>
@@ -296,21 +281,19 @@ export default function MatchFeedScreen() {
 
 // ─── Sub Components ───
 
-function Header() {
-  return (
-    <View style={styles.header}>
-      <Text style={styles.logo}>lll</Text>
-      <View style={styles.headerIcons}>
-        <TouchableOpacity style={styles.headerIconBtn}>
-          <Ionicons name="heart-outline" size={22} color={COLORS.primaryDark} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.headerIconBtn}>
-          <Ionicons name="notifications-outline" size={22} color={COLORS.primaryDark} />
-        </TouchableOpacity>
-      </View>
+const Header = () => (
+  <View style={styles.header}>
+    <Image source={require('../../assets/images/logo_lightBg.png')} style={styles.logoImage} />
+    <View style={styles.headerIcons}>
+      <TouchableOpacity style={styles.headerIconBtn} onPress={() => router.push('/matches/favorites' as any)}>
+        <Ionicons name="heart" size={24} color={COLORS.primary} />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.headerIconBtn} onPress={() => router.push('/notifications' as any)}>
+        <Ionicons name="notifications-outline" size={24} color={COLORS.primaryDark} />
+      </TouchableOpacity>
     </View>
-  );
-}
+  </View>
+);
 
 function getTimeUntilNoon(): string {
   const now = new Date();

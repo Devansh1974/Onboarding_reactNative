@@ -36,8 +36,8 @@ export default function ProfileScreen() {
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Settings</Text>
-        <TouchableOpacity style={styles.moreBtn} onPress={() => comingSoon('More options')}>
-          <Ionicons name="ellipsis-horizontal" size={22} color={COLORS.primary} />
+        <TouchableOpacity style={styles.moreBtn} onPress={() => router.push('/notifications' as any)}>
+          <Ionicons name="notifications-outline" size={24} color={COLORS.primaryDark} />
         </TouchableOpacity>
       </View>
 

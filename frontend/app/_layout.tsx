@@ -29,6 +29,7 @@ export default function RootLayout() {
             <Stack.Screen name="edit-profile" />
             <Stack.Screen name="legal-safety" />
             <Stack.Screen name="delete-account" />
+            <Stack.Screen name="notifications" />
           </Stack>
         </AdminProvider>
       </OnboardingProvider>

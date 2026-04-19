@@ -35,7 +35,7 @@ export default function AttachmentQuiz() {
       });
       const result = await response.json();
       if (result.success) {
-        router.replace('/compatibility-quiz' as any);
+        router.replace('/compatibility-quiz/conflict' as any);
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
@@ -105,7 +105,10 @@ export default function AttachmentQuiz() {
         <TouchableOpacity style={styles.backButton} onPress={prevStep}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Attachment & Comfort Zone</Text>
+        <Text style={styles.headerTitle}>Attachment & Comfort</Text>
+      </View>
+      <View style={{ width: '100%', height: 4, backgroundColor: '#E2E8F0' }}>
+        <View style={{ width: `${Math.round(((10 + step) / 25) * 100)}%`, height: '100%', backgroundColor: COLORS.primary }} />
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>

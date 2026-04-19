@@ -34,7 +34,7 @@ export default function GrowthQuiz() {
       });
       const result = await response.json();
       if (result.success) {
-        router.replace('/compatibility-quiz' as any);
+        router.replace('/home');
       } else {
         Alert.alert('Error', result.message || 'Something went wrong');
       }
@@ -49,13 +49,32 @@ export default function GrowthQuiz() {
   const nextStep = () => { if (step < 5) setStep(step + 1); else handleSubmit(); };
   const prevStep = () => { if (step > 1) setStep(step - 1); else router.back(); };
 
-  const renderNextArrow = (disabled = false) => (
-    <View style={styles.arrowContainer}>
-      <TouchableOpacity style={[styles.roundArrowBtn, disabled && { opacity: 0.5 }]} onPress={nextStep} disabled={disabled || loading}>
-        <Ionicons name="arrow-forward" size={24} color={COLORS.white} />
-      </TouchableOpacity>
-    </View>
-  );
+  const renderNextArrow = (disabled = false) => {
+    if (step === 5) {
+      return (
+        <View style={{ marginTop: SPACING.xl }}>
+          <TouchableOpacity
+            style={[styles.saveButton, disabled && { opacity: 0.5 }]}
+            onPress={handleSubmit}
+            disabled={disabled || loading}
+          >
+            <Text style={styles.saveBtnText}>{loading ? 'Saving...' : 'Save'}</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.arrowContainer}>
+        <TouchableOpacity 
+          style={[styles.roundArrowBtn, disabled && { opacity: 0.5 }]} 
+          onPress={nextStep}
+          disabled={disabled || loading}
+        >
+          <Ionicons name="arrow-forward" size={24} color={COLORS.white} />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   const renderGridOptions = (options: {id: string, text: string, icon: keyof typeof Ionicons.glyphMap}[], currentVal: string | undefined, field: keyof Answers) => (
     <View style={styles.gridContainer}>
@@ -104,7 +123,10 @@ export default function GrowthQuiz() {
         <TouchableOpacity style={styles.backButton} onPress={prevStep}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Growth & Emotional Maturity</Text>
+        <Text style={styles.headerTitle}>Growth & Maturity</Text>
+      </View>
+      <View style={{ width: '100%', height: 4, backgroundColor: '#E2E8F0' }}>
+        <View style={{ width: `${Math.round(((20 + step) / 25) * 100)}%`, height: '100%', backgroundColor: COLORS.primary }} />
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
@@ -190,5 +212,7 @@ const styles = StyleSheet.create({
   scaleText: { ...TYPOGRAPHY.body, marginLeft: SPACING.md, color: COLORS.text },
   scaleTextSelected: { color: COLORS.primary, fontWeight: '600' },
   arrowContainer: { alignItems: 'center', marginTop: SPACING.xxl },
-  roundArrowBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primaryDark, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  roundArrowBtn: { width: 60, height: 48, borderRadius: 24, backgroundColor: COLORS.primaryDark, alignItems: 'center', justifyContent: 'center' },
+  saveButton: { backgroundColor: COLORS.primaryDark, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.md },
+  saveBtnText: { ...TYPOGRAPHY.body, color: COLORS.white, fontWeight: '600' },
 });
