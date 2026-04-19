@@ -18,6 +18,13 @@ interface LifestyleAnswers {
   exercise?: string;
 }
 
+interface Preferences {
+  ageRange: { min: number; max: number };
+  heightRange: { min: number; max: number };
+  languages: string[];
+  dealbreakers: string[];
+}
+
 interface OnboardingData {
   // Auth
   phoneNumber: string;
@@ -56,6 +63,10 @@ interface OnboardingData {
   // System
   onboardingCompleted: boolean;
   notificationsEnabled: boolean;
+  
+  // Photos & Preferences
+  photos: string[];
+  preferences: Preferences;
 }
 
 interface OnboardingContextType {
@@ -89,6 +100,13 @@ const initialData: OnboardingData = {
   lifestyle: {},
   onboardingCompleted: false,
   notificationsEnabled: false,
+  photos: [],
+  preferences: {
+    ageRange: { min: 18, max: 28 },
+    heightRange: { min: 5.0, max: 6.5 },
+    languages: [],
+    dealbreakers: [],
+  },
 };
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);

@@ -1,14 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  RefreshControl,
+  View, Text, StyleSheet, TouchableOpacity, Image,
+  Dimensions, ActivityIndicator, ScrollView, Animated,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,22 +11,9 @@ import { useOnboarding } from '../../src/context/OnboardingContext';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 const { width } = Dimensions.get('window');
-
-// Pillar icons and colors
-const PILLAR_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  Lifestyle:     { icon: 'bicycle',      color: '#E67E22' },
-  Communication: { icon: 'chatbubbles',  color: '#3498DB' },
-  Attachment:    { icon: 'heart',        color: '#E74C3C' },
-  Conflict:      { icon: 'people',       color: '#9B59B6' },
-  Growth:        { icon: 'leaf',         color: '#27AE60' },
-};
-
-interface PillarScore {
-  percentage: number;
-  earned: number;
-  maxPossible: number;
-  displayName: string;
-}
+const CARD_WIDTH = width - SPACING.lg * 2;
+const CARD_HEIGHT = CARD_WIDTH * 1.25;
+const MAX_DAILY = 5;
 
 interface MatchItem {
   userId: string;
@@ -45,329 +25,341 @@ interface MatchItem {
   education: string;
   story: string;
   interests: string[];
+  photos: string[];
+  workDetails: any;
+  studyDetails: any;
+  timeUsage: string;
+  nonNegotiables: string[];
+  offerings: string[];
+  lifestyle: any;
+  height: number | null;
+  nativeState: string;
   score: number;
   maxScore: number;
   percentage: number;
-  pillarScores: Record<string, PillarScore>;
+  pillarScores: any;
   reasons: string[];
 }
 
-export default function MatchesScreen() {
+export default function MatchFeedScreen() {
   const { data } = useOnboarding();
   const [matches, setMatches] = useState<MatchItem[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fadeAnims = useRef<Animated.Value[]>([]);
+  const [allViewed, setAllViewed] = useState(false);
+  const cardScale = useRef(new Animated.Value(0.95)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     fetchMatches();
   }, []);
+
+  useEffect(() => {
+    // Animate card entrance
+    cardScale.setValue(0.95);
+    cardOpacity.setValue(0);
+    Animated.parallel([
+      Animated.spring(cardScale, { toValue: 1, useNativeDriver: true, tension: 100, friction: 8 }),
+      Animated.timing(cardOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+    ]).start();
+    setCurrentPhotoIndex(0);
+  }, [currentIndex]);
 
   const fetchMatches = async () => {
     try {
       setError(null);
       const response = await fetch(`${BACKEND_URL}/api/matches/${data.phoneNumber}`);
       const result = await response.json();
-
       if (result.success) {
-        setMatches(result.matches || []);
-        // Setup animation values
-        fadeAnims.current = (result.matches || []).map(() => new Animated.Value(0));
-        // Stagger animate cards
-        setTimeout(() => {
-          const animations = fadeAnims.current.map((anim, i) =>
-            Animated.timing(anim, {
-              toValue: 1,
-              duration: 400,
-              delay: i * 120,
-              useNativeDriver: true,
-            })
-          );
-          Animated.parallel(animations).start();
-        }, 100);
+        // Take only top 5 (or fewer)
+        const top = (result.matches || []).slice(0, MAX_DAILY);
+        setMatches(top);
+        if (top.length === 0) setAllViewed(true);
       } else {
         setError(result.message || 'Failed to load matches');
       }
     } catch (e) {
-      console.error('Error fetching matches:', e);
-      setError('Unable to connect to the server');
+      console.error(e);
+      setError('Unable to connect to server');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchMatches();
   };
 
   const getAge = (birthday: string) => {
     if (!birthday) return null;
     const birth = new Date(birthday);
     if (isNaN(birth.getTime())) return null;
-    const diff = Date.now() - birth.getTime();
-    return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
+    return Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
   };
 
-  const getPercentageColor = (pct: number) => {
-    if (pct >= 70) return '#27AE60';
-    if (pct >= 45) return '#F39C12';
-    return '#E74C3C';
+  const nextProfile = () => {
+    if (currentIndex < matches.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      setAllViewed(true);
+    }
   };
 
-  // ─── Circular Progress Ring ───
-  const ProgressRing = ({ percentage, size = 72 }: { percentage: number; size?: number }) => {
-    const color = getPercentageColor(percentage);
-    const strokeWidth = 5;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const filled = (percentage / 100) * circumference;
-
-    return (
-      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-        {/* Background ring */}
-        <View style={{
-          position: 'absolute',
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: strokeWidth,
-          borderColor: COLORS.lightGray + '60',
-        }} />
-        {/* Filled ring (approximated with border trick) */}
-        <View style={{
-          position: 'absolute',
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: strokeWidth,
-          borderColor: color,
-          borderTopColor: percentage >= 25 ? color : 'transparent',
-          borderRightColor: percentage >= 50 ? color : 'transparent',
-          borderBottomColor: percentage >= 75 ? color : 'transparent',
-          borderLeftColor: percentage >= 100 ? color : 'transparent',
-          transform: [{ rotate: '-90deg' }],
-        }} />
-        {/* Percentage text */}
-        <Text style={{ fontSize: 18, fontWeight: '800', color }}>{percentage}%</Text>
-      </View>
-    );
+  const handleNotForMe = () => {
+    nextProfile();
   };
 
-  // ─── Pillar Bar ───
-  const PillarBar = ({ pillar, data: pillarData }: { pillar: string; data: PillarScore }) => {
-    const meta = PILLAR_META[pillar] || { icon: 'ellipse', color: COLORS.primary };
-    return (
-      <View style={styles.pillarRow}>
-        <View style={styles.pillarIconWrap}>
-          <Ionicons name={meta.icon} size={14} color={meta.color} />
-        </View>
-        <View style={styles.pillarBarWrap}>
-          <View style={styles.pillarBarBg}>
-            <View style={[styles.pillarBarFill, {
-              width: `${Math.min(pillarData.percentage, 100)}%`,
-              backgroundColor: meta.color,
-            }]} />
-          </View>
-        </View>
-        <Text style={styles.pillarPct}>{pillarData.percentage}%</Text>
-      </View>
-    );
+  const handleFavorite = () => {
+    nextProfile();
   };
 
-  // ─── Match Card ───
-  const MatchCard = ({ match, index }: { match: MatchItem; index: number }) => {
-    const age = getAge(match.birthday);
-    const fadeAnim = fadeAnims.current[index] || new Animated.Value(1);
-
-    return (
-      <Animated.View style={[styles.matchCard, {
-        opacity: fadeAnim,
-        transform: [{
-          translateY: fadeAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [30, 0],
-          }),
-        }],
-      }]}>
-        {/* Card Header */}
-        <View style={styles.cardHeader}>
-          <View style={styles.avatarWrap}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={28} color={COLORS.white} />
-            </View>
-            <View style={[styles.genderBadge, { backgroundColor: match.gender === 'female' ? '#FF6B9D' : '#5B9BD5' }]}>
-              <Ionicons name={match.gender === 'female' ? 'female' : 'male'} size={10} color={COLORS.white} />
-            </View>
-          </View>
-
-          <View style={styles.cardInfo}>
-            <Text style={styles.cardName}>{match.name}{age ? `, ${age}` : ''}</Text>
-            {match.location ? (
-              <View style={styles.locationRow}>
-                <Ionicons name="location-outline" size={12} color={COLORS.textSecondary} />
-                <Text style={styles.locationText}>{match.location}</Text>
-              </View>
-            ) : null}
-            {match.education ? (
-              <Text style={styles.educationText}>{match.education}</Text>
-            ) : null}
-          </View>
-
-          <ProgressRing percentage={match.percentage} />
-        </View>
-
-        {/* Reasons Tags */}
-        {match.reasons.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.reasonsScroll}>
-            {match.reasons.map((reason, i) => (
-              <View key={i} style={styles.reasonTag}>
-                <Ionicons name="sparkles" size={10} color={COLORS.primary} style={{ marginRight: 4 }} />
-                <Text style={styles.reasonText}>{reason}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Pillar Breakdown */}
-        <View style={styles.pillarSection}>
-          <Text style={styles.pillarSectionTitle}>COMPATIBILITY BREAKDOWN</Text>
-          {Object.entries(match.pillarScores).map(([pillar, pData]) => (
-            <PillarBar key={pillar} pillar={pillar} data={pData} />
-          ))}
-        </View>
-
-        {/* Story snippet */}
-        {match.story ? (
-          <View style={styles.storyWrap}>
-            <Text style={styles.storyLabel}>ABOUT</Text>
-            <Text style={styles.storyText} numberOfLines={2}>{match.story}</Text>
-          </View>
-        ) : null}
-
-        {/* Interests */}
-        {match.interests && match.interests.length > 0 && (
-          <View style={styles.interestsWrap}>
-            {match.interests.slice(0, 5).map((interest, i) => (
-              <View key={i} style={styles.interestChip}>
-                <Text style={styles.interestText}>{interest}</Text>
-              </View>
-            ))}
-            {match.interests.length > 5 && (
-              <View style={styles.interestChip}>
-                <Text style={styles.interestText}>+{match.interests.length - 5}</Text>
-              </View>
-            )}
-          </View>
-        )}
-      </Animated.View>
-    );
+  const handleRequestCall = () => {
+    // Future feature — just show next for now
+    nextProfile();
   };
 
-  // ─── Loading State ───
+  const openProfile = () => {
+    if (!matches[currentIndex]) return;
+    const match = matches[currentIndex];
+    // Navigate to profile with match data serialized
+    router.push({
+      pathname: '/matches/profile',
+      params: { matchData: JSON.stringify(match) },
+    } as any);
+  };
+
+  const cyclePhoto = (dir: number) => {
+    const match = matches[currentIndex];
+    if (!match || !match.photos || match.photos.length <= 1) return;
+    const len = match.photos.length;
+    setCurrentPhotoIndex((prev) => (prev + dir + len) % len);
+  };
+
+  // ─── Loading ───
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.primaryDark} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Your Matches</Text>
-        </View>
-        <View style={styles.centerContent}>
+        <Header />
+        <View style={styles.center}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Finding your best matches...</Text>
+          <Text style={styles.loadingText}>Finding your matches...</Text>
         </View>
+        <BottomTabs />
       </SafeAreaView>
     );
   }
 
-  // ─── Error State ───
+  // ─── Error ───
   if (error) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.primaryDark} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Your Matches</Text>
-        </View>
-        <View style={styles.centerContent}>
+        <Header />
+        <View style={styles.center}>
           <Ionicons name="cloud-offline-outline" size={64} color={COLORS.lightGray} />
-          <Text style={styles.errorTitle}>Oops!</Text>
-          <Text style={styles.errorSubtitle}>{error}</Text>
+          <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => { setLoading(true); fetchMatches(); }}>
-            <Ionicons name="refresh" size={18} color={COLORS.white} />
             <Text style={styles.retryBtnText}>Try Again</Text>
           </TouchableOpacity>
         </View>
+        <BottomTabs />
       </SafeAreaView>
     );
   }
 
-  // ─── Main Screen ───
+  // ─── Daily Limit ───
+  if (allViewed) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <Header />
+        <View style={styles.center}>
+          <Text style={{ fontSize: 60, marginBottom: SPACING.lg }}>🌙</Text>
+          <Text style={styles.limitTitle}>That's all for today</Text>
+          <Text style={styles.limitSubtitle}>
+            {matches.length > 0
+              ? `You've seen all ${matches.length} profile${matches.length > 1 ? 's' : ''} for today.\nCome back tomorrow for 5 fresh matches.`
+              : 'No matches available yet.\nCheck back as more people join!'}
+          </Text>
+
+          <View style={styles.timerCard}>
+            <Text style={styles.timerLabel}>NEXT REFRESH IN</Text>
+            <Text style={styles.timerValue}>
+              {getTimeUntilNoon()}
+            </Text>
+            <Text style={styles.timerSub}>🕐 Tomorrow at 12:00 PM</Text>
+          </View>
+
+          {matches.length > 0 && (
+            <TouchableOpacity
+              style={styles.viewLikedBtn}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.viewLikedBtnText}>View Liked Profiles →</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <BottomTabs />
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Main Match Card ───
+  const match = matches[currentIndex];
+  const age = getAge(match.birthday);
+  const photos = match.photos || [];
+  const hasPhotos = photos.length > 0;
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primaryDark} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Your Matches</Text>
-        <View style={styles.countBadge}>
-          <Text style={styles.countBadgeText}>{matches.length}</Text>
-        </View>
-      </View>
+      <Header />
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
-        }
-      >
-        {/* Hero Banner */}
-        <View style={styles.heroBanner}>
-          <View style={styles.heroIconWrap}>
-            <Ionicons name="heart" size={24} color={COLORS.white} />
-          </View>
-          <View style={{ flex: 1, marginLeft: SPACING.md }}>
-            <Text style={styles.heroTitle}>
-              {matches.length > 0
-                ? `We found ${matches.length} match${matches.length > 1 ? 'es' : ''} for you!`
-                : 'No matches yet'}
-            </Text>
-            <Text style={styles.heroSubtitle}>
-              {matches.length > 0
-                ? 'Based on your compatibility quiz answers'
-                : 'Check back soon as more people join'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Empty State */}
-        {matches.length === 0 && (
-          <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={80} color={COLORS.lightGray} />
-            <Text style={styles.emptyTitle}>No matches found</Text>
-            <Text style={styles.emptySubtitle}>
-              We're growing our community! More compatible profiles will appear here soon.
-            </Text>
+      <View style={styles.feedContent}>
+        {/* Photo Dots */}
+        {hasPhotos && photos.length > 1 && (
+          <View style={styles.dotsRow}>
+            {photos.map((_, i) => (
+              <View
+                key={i}
+                style={[styles.dot, i === currentPhotoIndex && styles.dotActive]}
+              />
+            ))}
           </View>
         )}
 
-        {/* Match Cards */}
-        {matches.map((match, index) => (
-          <MatchCard key={match.userId || match.phoneNumber} match={match} index={index} />
-        ))}
+        {/* Match Card */}
+        <Animated.View style={[styles.matchCard, {
+          transform: [{ scale: cardScale }],
+          opacity: cardOpacity,
+        }]}>
+          <TouchableOpacity activeOpacity={0.95} onPress={openProfile} style={{ flex: 1 }}>
+            {/* Photo */}
+            <View style={styles.photoWrap}>
+              {hasPhotos ? (
+                <Image source={{ uri: photos[currentPhotoIndex] }} style={styles.cardPhoto} />
+              ) : (
+                <View style={[styles.cardPhoto, styles.noPhoto]}>
+                  <Ionicons name="person" size={80} color={COLORS.white} />
+                </View>
+              )}
 
-        <View style={{ height: SPACING.xxl }} />
-      </ScrollView>
+              {/* Photo nav left/right zones */}
+              {hasPhotos && photos.length > 1 && (
+                <>
+                  <TouchableOpacity style={styles.photoNavLeft} onPress={() => cyclePhoto(-1)} />
+                  <TouchableOpacity style={styles.photoNavRight} onPress={() => cyclePhoto(1)} />
+                </>
+              )}
+
+              {/* Compatibility badge */}
+              <View style={styles.compatBadge}>
+                <Text style={styles.compatBadgeText}>{match.percentage}% Compatible</Text>
+              </View>
+
+              {/* Name overlay */}
+              <View style={styles.nameOverlay}>
+                <Text style={styles.nameText}>
+                  {match.name}{age ? `, ${age}` : ''}
+                </Text>
+                {match.location ? (
+                  <View style={styles.locationRow}>
+                    <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.8)" />
+                    <Text style={styles.locationText}>{match.location}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.actionBtn} onPress={handleNotForMe}>
+            <View style={styles.actionCircle}>
+              <Ionicons name="close" size={28} color={COLORS.textSecondary} />
+            </View>
+            <Text style={styles.actionLabel}>NOT FOR ME</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionBtn} onPress={handleFavorite}>
+            <View style={[styles.actionCircle, styles.actionCircleFav]}>
+              <Ionicons name="heart" size={28} color={COLORS.primary} />
+            </View>
+            <Text style={styles.actionLabel}>FAVORITE</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Request a Call */}
+        <TouchableOpacity style={styles.callBtn} onPress={handleRequestCall}>
+          <Text style={styles.callBtnText}>Request a Call</Text>
+        </TouchableOpacity>
+
+        {/* Info text */}
+        <View style={styles.infoTextWrap}>
+          <Text style={styles.infoLine}>NOT FOR ME = REFRESHES IN 24H</Text>
+          <Text style={styles.infoLine}>FAVORITE = STAYS UNTIL UNFAVORED</Text>
+          <Text style={[styles.infoLine, styles.infoBold]}>
+            THESE PROFILES WILL REFRESH AT 12:00 NOON IF{'\n'}NO ACTION IS TAKEN.
+          </Text>
+        </View>
+      </View>
+
+      <BottomTabs />
     </SafeAreaView>
   );
+}
+
+// ─── Sub Components ───
+
+function Header() {
+  return (
+    <View style={styles.header}>
+      <Text style={styles.logo}>lll</Text>
+      <View style={styles.headerIcons}>
+        <TouchableOpacity style={styles.headerIconBtn}>
+          <Ionicons name="heart-outline" size={22} color={COLORS.primaryDark} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.headerIconBtn}>
+          <Ionicons name="notifications-outline" size={22} color={COLORS.primaryDark} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+function BottomTabs() {
+  return (
+    <View style={styles.tabBar}>
+      <TouchableOpacity style={styles.tab} onPress={() => router.push('/home' as any)}>
+        <Ionicons name="home-outline" size={22} color={COLORS.textSecondary} />
+        <Text style={styles.tabLabel}>Home</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.tab} onPress={() => router.push('/dates' as any)}>
+        <Ionicons name="calendar-outline" size={22} color={COLORS.textSecondary} />
+        <Text style={styles.tabLabel}>Dates</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.tab, styles.tabCenter]}>
+        <View style={styles.tabCenterCircle}>
+          <Ionicons name="sync" size={26} color={COLORS.white} />
+        </View>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.tab} onPress={() => router.push('/requests' as any)}>
+        <Ionicons name="mail-outline" size={22} color={COLORS.textSecondary} />
+        <Text style={styles.tabLabel}>Requests</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.tab} onPress={() => router.push('/profile' as any)}>
+        <Ionicons name="person-outline" size={22} color={COLORS.textSecondary} />
+        <Text style={styles.tabLabel}>Profile</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function getTimeUntilNoon(): string {
+  const now = new Date();
+  const noon = new Date(now);
+  noon.setHours(12, 0, 0, 0);
+  if (now >= noon) noon.setDate(noon.getDate() + 1);
+  const diff = noon.getTime() - now.getTime();
+  const hours = Math.floor(diff / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  return `${hours}h ${mins}m`;
 }
 
 const styles = StyleSheet.create({
@@ -375,297 +367,133 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
     backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray + '40',
+    borderBottomWidth: 1, borderBottomColor: COLORS.lightGray + '40',
   },
-  backButton: { width: 40, height: 40, justifyContent: 'center' },
-  headerTitle: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.primaryDark,
-    fontSize: 20,
-    marginLeft: SPACING.sm,
-    flex: 1,
+  logo: {
+    fontSize: 26, fontWeight: '800', color: COLORS.primaryDark,
+    fontStyle: 'italic', letterSpacing: -1,
   },
-  countBadge: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-    minWidth: 28,
-    alignItems: 'center',
-  },
-  countBadgeText: {
-    color: COLORS.white,
-    fontSize: 13,
-    fontWeight: '700',
-  },
+  headerIcons: { flexDirection: 'row', alignItems: 'center' },
+  headerIconBtn: { marginLeft: SPACING.md, padding: 4 },
 
-  scrollContent: { padding: SPACING.lg, paddingTop: SPACING.md },
-
-  // Center content (loading/error)
-  centerContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.xxl,
-  },
-  loadingText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.lg,
-    textAlign: 'center',
-  },
-  errorTitle: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.text,
-    marginTop: SPACING.lg,
-  },
-  errorSubtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: SPACING.sm,
-  },
+  // Center states
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: SPACING.xxl },
+  loadingText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, marginTop: SPACING.lg },
+  errorText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, marginTop: SPACING.md, textAlign: 'center' },
   retryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.round,
-    marginTop: SPACING.xl,
+    marginTop: SPACING.lg, backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md, borderRadius: BORDER_RADIUS.round,
   },
-  retryBtnText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.white,
-    marginLeft: SPACING.sm,
-    fontSize: 15,
-  },
+  retryBtnText: { ...TYPOGRAPHY.button, color: COLORS.white },
 
-  // Hero Banner
-  heroBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#472B52',
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+  // Daily limit
+  limitTitle: { ...TYPOGRAPHY.h1, color: COLORS.text, textAlign: 'center', fontSize: 28 },
+  limitSubtitle: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, textAlign: 'center', marginTop: SPACING.sm, lineHeight: 22 },
+  timerCard: {
+    backgroundColor: COLORS.primaryDark, borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.xl, alignItems: 'center', marginTop: SPACING.xl, width: '80%',
   },
-  heroIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  timerLabel: { ...TYPOGRAPHY.caption, color: 'rgba(255,255,255,0.6)', fontWeight: '700', letterSpacing: 1 },
+  timerValue: { fontSize: 36, fontWeight: '800', color: COLORS.white, marginVertical: SPACING.sm },
+  timerSub: { ...TYPOGRAPHY.caption, color: '#F39C12', fontWeight: '600' },
+  viewLikedBtn: {
+    marginTop: SPACING.xl, backgroundColor: COLORS.primaryDark,
+    paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md, borderRadius: BORDER_RADIUS.round,
   },
-  heroTitle: {
-    ...TYPOGRAPHY.bodyBold,
-    color: COLORS.white,
-    fontSize: 16,
-  },
-  heroSubtitle: {
-    ...TYPOGRAPHY.caption,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
-  },
+  viewLikedBtnText: { ...TYPOGRAPHY.button, color: COLORS.white, fontSize: 15 },
 
-  // Empty State
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xxl * 2,
+  // Feed
+  feedContent: { flex: 1, alignItems: 'center', paddingTop: SPACING.sm },
+
+  // Dots
+  dotsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm },
+  dot: {
+    width: 24, height: 5, borderRadius: 3,
+    backgroundColor: COLORS.lightGray, marginHorizontal: 2,
   },
-  emptyTitle: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.text,
-    marginTop: SPACING.lg,
-    fontSize: 22,
-  },
-  emptySubtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: SPACING.sm,
-    lineHeight: 22,
-  },
+  dotActive: { backgroundColor: COLORS.primaryDark, width: 30 },
 
   // Match Card
   matchCard: {
+    width: CARD_WIDTH, height: CARD_HEIGHT,
+    borderRadius: BORDER_RADIUS.xl, overflow: 'hidden',
     backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
-    marginBottom: SPACING.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12, shadowRadius: 12, elevation: 6,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
+  photoWrap: { flex: 1, position: 'relative' },
+  cardPhoto: { width: '100%', height: '100%', borderRadius: BORDER_RADIUS.xl },
+  noPhoto: {
+    backgroundColor: COLORS.primaryLight, alignItems: 'center', justifyContent: 'center',
   },
-  avatarWrap: {
-    position: 'relative',
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  genderBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
-  },
-  cardInfo: {
-    flex: 1,
-    marginLeft: SPACING.md,
-  },
-  cardName: {
-    ...TYPOGRAPHY.bodyBold,
-    color: COLORS.text,
-    fontSize: 17,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  locationText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginLeft: 3,
-  },
-  educationText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: 1,
-  },
-
-  // Reasons
-  reasonsScroll: {
-    marginBottom: SPACING.md,
-  },
-  reasonTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary + '10',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: BORDER_RADIUS.round,
-    marginRight: SPACING.sm,
-  },
-  reasonText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.primary,
-    fontWeight: '600',
-    fontSize: 11,
-  },
-
-  // Pillar Section
-  pillarSection: {
-    backgroundColor: COLORS.background,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  pillarSectionTitle: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    fontSize: 10,
-    marginBottom: SPACING.sm,
-  },
-  pillarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  pillarIconWrap: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: COLORS.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.sm,
-  },
-  pillarBarWrap: {
-    flex: 1,
-    marginRight: SPACING.sm,
-  },
-  pillarBarBg: {
-    height: 6,
-    backgroundColor: COLORS.lightGray + '60',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  pillarBarFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  pillarPct: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '700',
-    color: COLORS.text,
-    width: 34,
-    textAlign: 'right',
-    fontSize: 11,
-  },
-
-  // Story
-  storyWrap: {
-    marginBottom: SPACING.md,
-  },
-  storyLabel: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    fontSize: 10,
-    marginBottom: 4,
-  },
-  storyText: {
-    ...TYPOGRAPHY.body,
-    fontSize: 14,
-    color: COLORS.text,
-    lineHeight: 20,
-  },
-
-  // Interests
-  interestsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  interestChip: {
-    backgroundColor: COLORS.cardBackground,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  photoNavLeft: { position: 'absolute', left: 0, top: 0, width: '40%', height: '100%' },
+  photoNavRight: { position: 'absolute', right: 0, top: 0, width: '40%', height: '100%' },
+  compatBadge: {
+    position: 'absolute', top: 12, right: 12,
+    backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 12, paddingVertical: 6,
     borderRadius: BORDER_RADIUS.round,
   },
-  interestText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text,
-    fontSize: 11,
-    fontWeight: '500',
+  compatBadgeText: { ...TYPOGRAPHY.caption, color: COLORS.primaryDark, fontWeight: '700', fontSize: 12 },
+  nameOverlay: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    paddingHorizontal: SPACING.lg, paddingBottom: SPACING.lg, paddingTop: SPACING.xxl,
+    background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderBottomLeftRadius: BORDER_RADIUS.xl,
+    borderBottomRightRadius: BORDER_RADIUS.xl,
   },
+  nameText: { ...TYPOGRAPHY.h2, color: COLORS.white, fontSize: 24 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  locationText: { ...TYPOGRAPHY.caption, color: 'rgba(255,255,255,0.85)', marginLeft: 4 },
+
+  // Actions
+  actionsRow: {
+    flexDirection: 'row', justifyContent: 'center',
+    alignItems: 'center', marginTop: SPACING.lg,
+    gap: 40,
+  },
+  actionBtn: { alignItems: 'center' },
+  actionCircle: {
+    width: 56, height: 56, borderRadius: 28,
+    borderWidth: 2, borderColor: COLORS.lightGray,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.white,
+  },
+  actionCircleFav: { borderColor: COLORS.primaryLight },
+  actionLabel: {
+    ...TYPOGRAPHY.caption, color: COLORS.textSecondary,
+    fontWeight: '700', fontSize: 10, marginTop: 6, letterSpacing: 0.5,
+  },
+
+  // Call button
+  callBtn: {
+    backgroundColor: COLORS.primaryDark, borderRadius: BORDER_RADIUS.round,
+    paddingHorizontal: SPACING.xxl, paddingVertical: SPACING.md,
+    marginTop: SPACING.md, width: CARD_WIDTH * 0.75, alignItems: 'center',
+  },
+  callBtnText: { ...TYPOGRAPHY.button, color: COLORS.white, fontSize: 16 },
+
+  // Info text
+  infoTextWrap: { marginTop: SPACING.md, alignItems: 'center', paddingHorizontal: SPACING.lg },
+  infoLine: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, fontSize: 10, textAlign: 'center', lineHeight: 16 },
+  infoBold: { fontWeight: '700', color: COLORS.primaryDark, marginTop: 4 },
+
+  // Bottom Tabs
+  tabBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
+    paddingVertical: SPACING.sm, backgroundColor: COLORS.white,
+    borderTopWidth: 1, borderTopColor: COLORS.lightGray + '40',
+  },
+  tab: { alignItems: 'center', flex: 1 },
+  tabCenter: { marginTop: -20 },
+  tabCenterCircle: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: COLORS.primaryDark, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 3, borderColor: COLORS.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 5,
+  },
+  tabLabel: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, fontSize: 10, marginTop: 2 },
 });

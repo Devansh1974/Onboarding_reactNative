@@ -9,8 +9,8 @@ const PORT = process.env.PORT || 8001;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
 // MongoDB Connection
 const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017';
@@ -27,6 +27,7 @@ const userRoutes = require('./routes/users');
 const sessionRoutes = require('./routes/sessions');
 const adminRoutes = require('./routes/admin');
 const matchRoutes = require('./routes/matchRoutes');
+const photoRoutes = require('./routes/photoRoutes');
 
 // Basic routes
 app.get('/api', (req, res) => {
@@ -46,6 +47,7 @@ app.use('/api', userRoutes);
 app.use('/api', sessionRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', matchRoutes);
+app.use('/api', photoRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {

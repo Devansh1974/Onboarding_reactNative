@@ -27,6 +27,13 @@ const userSchema = new mongoose.Schema({
   foodHabits: [String],
   interests: [String],
   lifestyle: { drink: String, smoke: String, exercise: String },
+  photos: { type: [String], default: [] },
+  preferences: {
+    ageRange: { min: { type: Number, default: 18 }, max: { type: Number, default: 30 } },
+    heightRange: { min: { type: Number, default: 5.0 }, max: { type: Number, default: 6.5 } },
+    languages: { type: [String], default: [] },
+    dealbreakers: { type: [String], default: [] },
+  },
   onboardingCompleted: { type: Boolean, default: false },
   notificationsEnabled: { type: Boolean, default: false },
   vibeCompleted: { type: Boolean, default: false },

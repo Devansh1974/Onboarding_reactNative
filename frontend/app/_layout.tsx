@@ -22,6 +22,8 @@ export default function RootLayout() {
             <Stack.Screen name="name" />
             <Stack.Screen name="home" />
             <Stack.Screen name="compatibility-quiz" />
+            <Stack.Screen name="preferences" />
+            <Stack.Screen name="upload-photos" />
             <Stack.Screen name="admin" />
           </Stack>
         </AdminProvider>

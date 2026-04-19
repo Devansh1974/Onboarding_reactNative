@@ -18,7 +18,7 @@ export default function AppreciateScreen() {
   }, []);
 
   const handleContinue = () => {
-    router.push('/notifications');
+    router.push('/preferences');
   };
 
   return (
