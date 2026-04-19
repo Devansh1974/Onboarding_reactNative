@@ -8,11 +8,12 @@ import { useOnboarding } from '../../src/context/OnboardingContext';
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 interface Answers {
-  q1?: number;
-  q2?: number;
-  q3?: string;
-  q4?: string;
-  q5?: number;
+  q1?: number;  // Q11: Worry partner loses interest (NEW)
+  q2?: number;  // Q12: Closeness vs space
+  q3?: number;  // Q13: Hold back feelings
+  q4?: string;  // Q14: When overwhelmed (MCQ)
+  q5?: string;  // Q15: Delayed texting (MCQ)
+  q6?: number;  // Q16: Feel safe sharing
 }
 
 export default function AttachmentQuiz() {
@@ -46,7 +47,7 @@ export default function AttachmentQuiz() {
     }
   };
 
-  const nextStep = () => { if (step < 5) setStep(step + 1); else handleSubmit(); };
+  const nextStep = () => { if (step < 6) setStep(step + 1); else handleSubmit(); };
   const prevStep = () => { if (step > 1) setStep(step - 1); else router.back(); };
 
   const renderNextArrow = (disabled = false) => (
@@ -110,26 +111,38 @@ export default function AttachmentQuiz() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
           <View style={styles.pillWrap}>
-            <View style={styles.pill}><Text style={styles.pillText}>QUESTION {step} OF 5</Text></View>
+            <View style={styles.pill}><Text style={styles.pillText}>QUESTION {step} OF 6</Text></View>
           </View>
 
+          {/* Q11: Worry partner may lose interest (NEW) */}
           {step === 1 && (
             <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>I love emotional closeness, but too much of it can make me want space.</Text>
+              <Text style={styles.questionTitle}>I sometimes worry that my partner might lose interest or drift away.</Text>
               {renderScaleOptions(answers.q1, 'q1')}
               {renderNextArrow(!answers.q1)}
             </View>
           )}
 
+          {/* Q12: Closeness vs space */}
           {step === 2 && (
             <View style={styles.stepBlock}>
-              <Text style={styles.questionTitle}>Even with someone I trust, I sometimes hold back my true feelings.</Text>
+              <Text style={styles.questionTitle}>I love emotional closeness, but too much of it can make me want space.</Text>
               {renderScaleOptions(answers.q2, 'q2')}
               {renderNextArrow(!answers.q2)}
             </View>
           )}
 
+          {/* Q13: Hold back feelings */}
           {step === 3 && (
+            <View style={styles.stepBlock}>
+              <Text style={styles.questionTitle}>Even with someone I trust, I sometimes hold back my true feelings.</Text>
+              {renderScaleOptions(answers.q3, 'q3')}
+              {renderNextArrow(!answers.q3)}
+            </View>
+          )}
+
+          {/* Q14: When overwhelmed (MCQ) */}
+          {step === 4 && (
             <View style={styles.stepBlock}>
               <Text style={styles.questionTitle}>When I feel overwhelmed, I usually:</Text>
               {renderGridOptions([
@@ -137,12 +150,13 @@ export default function AttachmentQuiz() {
                 { id: 'talk', text: 'Talk it out with someone I trust.', icon: 'people-outline' },
                 { id: 'distract', text: 'Distract myself with music, shows, or hobbies.', icon: 'musical-notes-outline' },
                 { id: 'busy', text: 'Try to stay busy and push through.', icon: 'briefcase-outline' },
-              ], answers.q3, 'q3')}
-              {renderNextArrow(!answers.q3)}
+              ], answers.q4, 'q4')}
+              {renderNextArrow(!answers.q4)}
             </View>
           )}
 
-          {step === 4 && (
+          {/* Q15: Delayed texting (MCQ) */}
+          {step === 5 && (
             <View style={styles.stepBlock}>
               <Text style={styles.questionTitle}>If someone you're dating doesn't text back for hours, what's your first reaction?</Text>
               {renderGridOptions([
@@ -150,16 +164,17 @@ export default function AttachmentQuiz() {
                 { id: 'anxious', text: 'Anxious – did I say something wrong?', icon: 'help-circle-outline' },
                 { id: 'unbothered', text: "Unbothered – I'll reply later too", icon: 'phone-portrait-outline' },
                 { id: 'irritated', text: 'Irritated – communication should be consistent', icon: 'warning-outline' },
-              ], answers.q4, 'q4')}
-              {renderNextArrow(!answers.q4)}
+              ], answers.q5, 'q5')}
+              {renderNextArrow(!answers.q5)}
             </View>
           )}
 
-          {step === 5 && (
+          {/* Q16: Feel safe sharing */}
+          {step === 6 && (
             <View style={styles.stepBlock}>
               <Text style={styles.questionTitle}>I feel safe sharing my feelings when I know I won't be judged.</Text>
-              {renderScaleOptions(answers.q5, 'q5')}
-              {renderNextArrow(!answers.q5)}
+              {renderScaleOptions(answers.q6, 'q6')}
+              {renderNextArrow(!answers.q6)}
             </View>
           )}
         </ScrollView>

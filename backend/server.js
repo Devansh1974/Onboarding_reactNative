@@ -26,6 +26,7 @@ mongoose.connect(MONGO_URL, {
 const userRoutes = require('./routes/users');
 const sessionRoutes = require('./routes/sessions');
 const adminRoutes = require('./routes/admin');
+const matchRoutes = require('./routes/matchRoutes');
 
 // Basic routes
 app.get('/api', (req, res) => {
@@ -44,6 +45,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api', userRoutes);
 app.use('/api', sessionRoutes);
 app.use('/api', adminRoutes);
+app.use('/api', matchRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -60,5 +62,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 WingMann Backend running on http://0.0.0.0:${PORT}`);
   console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🗄️  Database: ${DB_NAME}`);
-  console.log(`📋 Features: Onboarding + Interview Scheduling + Admin Panel`);
+  console.log(`📋 Features: Onboarding + Interview Scheduling + Admin Panel + Compatibility Matching`);
 });

@@ -64,7 +64,7 @@ export default function CompatibilityQuizIndex() {
       sub: 'Emotional availability, reassurance, independence',
       icon: 'bed',
       route: '/compatibility-quiz/attachment',
-      isDone: isComplete('attachmentAndComfort', 5),
+      isDone: isComplete('attachmentAndComfort', 6),
       isLocked: !isComplete('emotionalCommunication', 5)
     },
     {

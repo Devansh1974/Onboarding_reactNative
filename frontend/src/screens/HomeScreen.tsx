@@ -96,7 +96,7 @@ export default function HomeScreen() {
   const isQuizCompleted = !!(
     quiz.lifestyleAndValues?.q5 &&
     quiz.emotionalCommunication?.q5 &&
-    quiz.attachmentAndComfort?.q5 &&
+    quiz.attachmentAndComfort?.q6 &&
     quiz.conflictAndRepair?.q4 &&
     quiz.growthAndReadiness?.q5
   );
