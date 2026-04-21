@@ -73,8 +73,8 @@ export default function ProfileScreen() {
             icon="pause-circle-outline"
             label="Pause My Profile"
             rightElement={<Switch value={pausedProfile} onValueChange={setPausedProfile} trackColor={{ true: COLORS.primary, false: COLORS.lightGray }} thumbColor={COLORS.white} />}
-            last
           />
+          <MenuItem icon="ban-outline" label="Blacklisted Users" onPress={() => router.push('/matches/rejects' as any)} last />
         </MenuGroup>
 
         <SectionHeader label="LEGAL & HELP" />

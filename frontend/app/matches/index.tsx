@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Image,
-  Dimensions, ActivityIndicator, Animated, ScrollView,
+  Dimensions, ActivityIndicator, Animated, ScrollView, Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -75,6 +75,11 @@ export default function MatchFeedScreen() {
   };
 
   const handleFavorite = async (matchId: string) => {
+    // Optimistic UI: move to next and remove from list
+    const currentMatches = [...matches];
+    setMatches(matches.filter(m => m && m.userId !== matchId));
+    scrollToNext();
+
     try {
       const res = await fetch(`${BACKEND_URL}/api/users/favorites`, {
         method: 'POST',
@@ -82,19 +87,21 @@ export default function MatchFeedScreen() {
         body: JSON.stringify({ phoneNumber: data.phoneNumber, targetUserId: matchId })
       });
       const body = await res.json();
-      if (body.success) {
-         scrollToNext();
-      } else {
-         Alert.alert('Error', 'Failed to save favorite');
+      if (!body.success) {
+         // Rollback if needed, but usually better to just log
+         console.error('Failed to save favorite:', body.message);
+         // setMatches(currentMatches); 
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Could not communicate with server');
     }
   };
 
   const handleReject = async (matchId: string) => {
+    // Optimistic UI: move to next and remove from list
+    setMatches(matches.filter(m => m && m.userId !== matchId));
     scrollToNext();
+    
     try {
       await fetch(`${BACKEND_URL}/api/users/rejects`, {
         method: 'POST',

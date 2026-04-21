@@ -62,7 +62,7 @@ async function getMatches(req, res) {
 
     const candidates = await User.find({
       phoneNumber: { $ne: phoneNumber },
-      userId: { $nin: [...rejectedIds, ...favoritesIds] },
+      id: { $nin: [...rejectedIds, ...favoritesIds] },
       gender: { $regex: new RegExp(`^${targetGender}$`, 'i') },
       'compatibilityQuiz.lifestyleAndValues': { $exists: true, $ne: null },
       'compatibilityQuiz.emotionalCommunication': { $exists: true, $ne: null },

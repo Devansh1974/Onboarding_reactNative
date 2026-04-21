@@ -105,6 +105,55 @@ router.post('/auth/verify-otp', async (req, res) => {
   }
 });
 
+// Get Populated Rejects
+router.get('/users/:phoneNumber/rejects', async (req, res) => {
+  try {
+    const { phoneNumber } = req.params;
+    const user = await User.findOne({ phoneNumber });
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    if (!user.rejects || user.rejects.length === 0) {
+      return res.json({ success: true, rejects: [] });
+    }
+
+    const rejectedProfiles = await User.find({ id: { $in: user.rejects } })
+      .select('id name location photos height religionFollow age birthday percentage story workDetails gender');
+
+    res.json({ success: true, rejects: rejectedProfiles });
+  } catch (error) {
+    console.error('Error fetching rejects:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Get Populated Favorites
+router.get('/users/:phoneNumber/favorites', async (req, res) => {
+  try {
+    const { phoneNumber } = req.params;
+    const user = await User.findOne({ phoneNumber });
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Fallback if favorites don't exist yet
+    if (!user.favorites || user.favorites.length === 0) {
+      return res.json({ success: true, favorites: [] });
+    }
+
+    const favoriteProfiles = await User.find({ id: { $in: user.favorites } })
+      .select('id name location photos height religionFollow age birthday percentage story workDetails gender');
+
+    res.json({ success: true, favorites: favoriteProfiles });
+  } catch (error) {
+    console.error('Error fetching favorites:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
 // Get User Profile
 router.get('/users/:phoneNumber', async (req, res) => {
   try {
@@ -180,30 +229,7 @@ router.post('/users/rejects', async (req, res) => {
   }
 });
 
-// Get Populated Favorites
-router.get('/users/:phoneNumber/favorites', async (req, res) => {
-  try {
-    const { phoneNumber } = req.params;
-    const user = await User.findOne({ phoneNumber });
-    
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-    
-    // Fallback if favorites don't exist yet
-    if (!user.favorites || user.favorites.length === 0) {
-      return res.json({ success: true, favorites: [] });
-    }
 
-    const favoriteProfiles = await User.find({ userId: { $in: user.favorites } })
-      .select('name location photos height religionFollow age birthday percentage story workDetails gender');
-
-    res.json({ success: true, favorites: favoriteProfiles });
-  } catch (error) {
-    console.error('Error fetching favorites:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-});
 
 // Update User Profile
 router.patch('/users/profile', async (req, res) => {
